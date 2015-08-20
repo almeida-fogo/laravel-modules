@@ -1,4 +1,4 @@
-## Laravel PHP Framework
+## LaravelModules
 
 [![Build Status](https://travis-ci.org/AlmeidaFogo/LaravelModules.svg)](https://travis-ci.org/AlmeidaFogo)
 [![Total Downloads](https://poser.pugx.org/laravel/framework/downloads.svg)](https://packagist.org/packages/laravel/framework)
