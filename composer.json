@@ -11,7 +11,7 @@
     {
       "name": "Ericson Soares",
       "email": "ericson.ds999@gmail.com"
-    } 
+    }
 
   ],
   "require": {
@@ -22,4 +22,4 @@
       "AlmeidaFogo\\LaravelModules\\": "src/"
     }
   }
-}
+} 
