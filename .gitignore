@@ -214,7 +214,6 @@ crashlytics-build.properties
 .env.php
 .env
 composer.phar
-composer.lock
 
 ### Composer ###
 composer.phar
