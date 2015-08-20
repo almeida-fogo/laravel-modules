@@ -1,0 +1,26 @@
+{
+  "name": "AlmeidaFogo/LaravelModules",
+  "description": "Modularize Your Laravel 5.1.",
+  "keywords": ["laravel", "Modularization"],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Raphael Almeida",
+      "email": "raphaelpda140@gmail.com"
+    },
+    {
+      "name": "Ericson Soares",
+      "email": "ericson.ds999@gmail.com"
+    }
+
+  ],
+  "require": {
+    "php": ">=5.4.0",
+    "laravel/laravel": "~5.1"
+  },
+  "autoload": {
+    "psr-4": {
+      "AlmeidaFogo\\LaravelModules\\": "src/"
+    }
+  }
+}
