@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Console\Commands;
+namespace AlmeidaFogo\LaravelModules\Commands;
 
 use Illuminate\Console\Command;
 use Mockery\CountValidator\Exception;
-use Symfony\Component\VarDumper\Caster\PdoCaster;
+
 
 class LoadModule extends Command
 {

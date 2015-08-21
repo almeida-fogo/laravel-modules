@@ -1,6 +1,8 @@
 <?php
 namespace AlmeidaFogo\LaravelModules;
 
+use Illuminate\Support\ServiceProvider;
+
 class ModulesServiceProvider extends ServiceProvider
 {
     /**
