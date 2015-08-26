@@ -12,7 +12,9 @@ class ModulesServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        //
+        $this->publishes([
+            __DIR__.'/Modulos' => base_path().'/app/Modulos',
+        ], 'modules');
     }
     /**
      * Register the application services.
