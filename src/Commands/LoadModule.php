@@ -111,7 +111,7 @@ class LoadModule extends Command
 			$tmpErrors = ModulesHelper::checkModuleConflicts($conflitos, $explodedLoadedModules, $explodedLoadedTypes);
 
 			//Se houverem conflitos
-			if ($tmpErrors == false)
+			if ($tmpErrors != false)
 			{
 				//Adiciona os erros para o array de erros
 				$errors = array_merge($errors, $tmpErrors);
@@ -130,7 +130,7 @@ class LoadModule extends Command
 			$tmpErrors = ModulesHelper::checkModuleDependencies($dependencias, $explodedLoadedModules, $explodedLoadedTypes);
 
 			//Se houverem conflitos
-			if ($tmpErrors == false)
+			if ($tmpErrors != false)
 			{
 				//Adiciona os erros para o array de erros
 				$errors = array_merge($errors, $tmpErrors);
@@ -159,7 +159,7 @@ class LoadModule extends Command
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-
+		//TODO: Continue From Here.
 							//////////////////////////////////////Configurações/////////////////////////////////////////////
 							if ($success){//Se os comandos anteriores rodarem com sucesso
 								$this->comment("INFO: Alterando configuracoes.");
