@@ -12,10 +12,6 @@ Silvio Santos Ipsum um, dois três, quatro, PIM, entendeuam? Mah você não cons
 
 1- Add the lines below to your composer.json:
     "require-dev": {
-        "fzaninotto/faker": "~1.4",
-        "mockery/mockery": "0.9.*",
-        "phpunit/phpunit": "~4.0",
-        "phpspec/phpspec": "~2.1",
         "almeida-fogo/laravel-modules": "*@dev"
     },
 
