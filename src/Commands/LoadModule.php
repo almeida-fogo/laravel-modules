@@ -2,13 +2,18 @@
 
 namespace AlmeidaFogo\LaravelModules\Commands;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Console\Command;
+use Illuminate\Support\Str;
 use Mockery\CountValidator\Exception;
 
 use AlmeidaFogo\LaravelModules\LaravelModules\Configs;
 use AlmeidaFogo\LaravelModules\LaravelModules\ModulesHelper;
 use AlmeidaFogo\LaravelModules\LaravelModules\RollbackManager;
 use AlmeidaFogo\LaravelModules\LaravelModules\RouteBuilder;
+use AlmeidaFogo\LaravelModules\LaravelModules\PathHelper;
+use AlmeidaFogo\LaravelModules\LaravelModules\Strings;
+use AlmeidaFogo\LaravelModules\LaravelModules\EscapeHelper;
 
 
 class LoadModule extends Command
@@ -25,7 +30,7 @@ class LoadModule extends Command
      *
      * @var string
      */
-    protected $description = 'Carrega um modulo de app para a aplicação.';
+    protected $description = 'Carrega um modulo de app para a aplicacao.';
 
     /**
      * Create a new command instance.
@@ -51,160 +56,116 @@ class LoadModule extends Command
 		//Nome do modulo
 		$moduleName = $this->argument("name");
 
-		//Seta status inicialde abort para false
-		$abort = false;
-
 		//Seta status inicial para True
 		$success = true;
 
+		//Inicializa variavel erros
+		$errors = [];
+
 		//Prepara variavel de rollback caso aja erro
-		$rollback = array();
+		$rollback = [];
 
-		//Configurações Gerais dos Modulos
-		$moduleGeneralConfig = base_path().'/app/Modulos/configs.php';
-
-		//Arquivo de Rollbacks
-		$moduleRollbackFile = base_path().'/app/Modulos/'.$moduleType.'/'.$moduleName.'/Rollback/rollback.php';
-
+		//Verifica se foram passados os comandos inline
 		if(is_null($moduleType) && is_null($moduleName)){
-			$moduleType = $this->ask('Qual tipo de módulo deseja carregar?');
-
-			$moduleName = $this->ask("Qual o nome do módulo do tipo \"".$moduleType."\" deseja carregar?");
+			//pede o tipo do modulo
+			$moduleType = $this->ask('Qual tipo de modulo deseja carregar?');
+			//pede o nome do modulo
+			$moduleName = $this->ask("Qual o nome do modulo do tipo \"".$moduleType."\" deseja carregar?");
 		}
 
-		try{
-			if (!(count(\DB::select(\DB::raw("SHOW TABLES LIKE 'project_modules';")))>0)){
-				\DB::select(\DB::raw("
-					CREATE TABLE project_modules
-					(
-						id			int NOT NULL PRIMARY KEY AUTO_INCREMENT,
-						module_name	VARCHAR (255) UNIQUE NOT NULL
-					)
-				"));
-				if(!(count(\DB::select(\DB::raw("SHOW TABLES LIKE 'project_modules';")))>0)){
-					$this->info("ERRO: Erro ao Criar Table de Moculos Carregados.");
-					return false;
-				}
-			}
-		}catch (Exception $e){
-			$this->info("ERRO: Erro ao Criar Table de Moculos Carregados.");
-			return false;
-		}
+		//Cria table de verificação das migrations
+		$success = ModulesHelper::createMigrationsCheckTable($this);
 
 		//Modulos ja carregados
-		$oldLoadedModules = Configs::getConfig($moduleGeneralConfig, "modulosCarregados");
+		$oldLoadedModules = Configs::getConfig(PathHelper::getModuleGeneralConfig(), "modulosCarregados");
 
-		//Caminho do arquivo de configurações do modulo
-		$configPath = base_path().'/app/Modulos/'.$moduleType.'/'.$moduleName.'/configs.php';
+		//Inicializa variavel de array dos modulos carregados
+		$explodedLoadedModules = null;
 
-		//Module Exists
-		if (file_exists($configPath))
+		//Inicializa variavel de array dos tipos de modulos carregados
+		$explodedLoadedTypes = null;
+
+		///////////////////////////////////PEGA MODULOS CARREGADOS EM FORMA DE ARRAY////////////////////////////////////
+		if($success)
 		{
-			//if MODULOS_CARREGADOS == null, carrega array vazio (EVITA QUE TENHA UM SEPARADOR NO INICIO)
-			if ($oldLoadedModules == "")
+			//Pega modulos carredos em forma de array
+			$explodedLoadedModules = ModulesHelper::getLoadedModules($oldLoadedModules, $moduleType , $moduleName );
+			//se houver erro
+			if ( is_null($explodedLoadedModules) )
 			{
-				//Carrega array vazio
-				$explodedLoadedModules = array();
-			}else{
-				//Separa modulos carregados em um array
-				$explodedLoadedModules = explode(" & ", $oldLoadedModules);
+				//Adiciona o erro para o array de erros
+				$errors[ ] = Strings::MODULE_NOT_FOUND;
+				$success = false;
 			}
+		}
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+		/////////////////////////////////CHECA POR CONFLITOS ENTRE OS MODULOS///////////////////////////////////////////
+		if($success){
 			//Separa os tipos dos modulos carregados em um array
-			$explodedLoadedTypes = ModulesHelper::explodeTypes($explodedLoadedModules);
+			$explodedLoadedTypes = ModulesHelper::explodeTypes( $explodedLoadedModules );
+			//Pega configuração de conflitos do modulo
+			$conflitos = Configs::getConfig(PathHelper::getModuleConfigPath($moduleType, $moduleName) , Strings::MODULE_CONFIG_CONFLICT);
 
-			//Conflitos de modulo
-			$conflitos = Configs::getConfig($configPath, "conflitos");
-			$conflitosExistentes = false;
-			foreach ($conflitos as $conflito){
-				//Se for uma conflito valido
-				if ($conflito != ""){
-					//Conflito quebrado em tipo e nome
-					$conflitoBroken = explode('.',$conflito);
-					//Tipo do Conflito
-					$conflitoType = $conflitoBroken[0];
-					//Verifica se é um conflito especifico
-					if (array_key_exists(1, $conflitoBroken)){
-						//verifica se o modulo conflituoso esta carregado
-						if(in_array($conflito, $explodedLoadedModules)){
-							//marca como erro de conflito
-							$conflitosExistentes = true;
-							$this->comment("ERRO: Existe um conflito com o modulo ".$conflito." que esta carregado");
-						}
-					}else{//Verifica se é um conflito de tipo
-						//verifica se o tipo conflituoso esta carregado
-						if (in_array($conflitoType, $explodedLoadedTypes)){
-							//marca como erro de conflito
-							$conflitosExistentes = true;
-							$this->comment("ERRO: Existe um conflito com o tipo do modulo ".$conflitoType." que esta carregado");
-						}
-					}
-				}
+			//Checa conflitos de modulos
+			$tmpErrors = ModulesHelper::checkModuleConflicts($conflitos, $explodedLoadedModules, $explodedLoadedTypes);
+
+			//Se houverem conflitos
+			if ($tmpErrors == false)
+			{
+				//Adiciona os erros para o array de erros
+				$errors = array_merge($errors, $tmpErrors);
+				$success = false;
 			}
+		}
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-			if ($conflitosExistentes == false){
-				//Dependencias do modulo
-				$dependencias = Configs::getConfig($configPath, "dependencias");
-				$missingDependency = false;
-				foreach ($dependencias as $dependencia){
-					//Se for uma dependencia válida
-					if ($dependencia != ""){
-						//Dependencia quebrada em tipo e nome
-						$dependenciaBroken = explode('.',$dependencia);
-						//Tipo da dependencia
-						$dependenciaType = $dependenciaBroken[0];
-						//Verifica se é uma dependencia especifica
-						if (array_key_exists(1, $dependenciaBroken)){
-							//verifica se a dependencia esta carregada
-							if(!in_array($dependencia, $explodedLoadedModules)){
-								//marca como erro de dependencia
-								$missingDependency = true;
-								$this->comment("ERRO: Dependencia ".$dependencia." faltando");
-							}
-						}else{//Verifica se é uma dependencia de tipo
-							//verifica se a dependencia esta carregada
-							if (!in_array($dependenciaType, $explodedLoadedTypes)){
-								//marca como erro de dependencia
-								$missingDependency = true;
-								$this->comment("ERRO: Dependencia do Tipo ".$dependenciaType." faltando");
-							}
-						}
-					}
-				}
 
-				//Se não existir erro de dependencia
-				if ($missingDependency == false){
-					//Verifica se o modulo ja esta carregado
-					if (!in_array($moduleType.".".$moduleName, $explodedLoadedModules))
-					{
-						////////////////////////////////////Constroi array com novo modulo//////////////////////////////////
-						array_push($explodedLoadedModules, $moduleType.".".$moduleName);
-						$newLoadedModules = implode(" & ", $explodedLoadedModules);
-						////////////////////////////////////////////////////////////////////////////////////////////////////
+		//////////////////////////////CHECA POR ERROS DE DEPENDENCIA ENTRE OS MODULOS///////////////////////////////////
+		if($success){
+			//Dependencias do modulo
+			$dependencias = Configs::getConfig(PathHelper::getModuleConfigPath($moduleType, $moduleName), Strings::MODULE_CONFIG_DEPENDENCIES);
 
-						//Verifica se o arquivo de configurações geral existe existe
-						if (file_exists($moduleGeneralConfig))
-						{
-							/////////////////////SINALIZA NAS CONFIGS GERAIS QUE O MODULO FOI CARREGADO/////////////////////
-							if ($success){//Se os comandos anteriores rodarem com sucesso
-								$this->comment("INFO: Carrendo no Arquivo de Configuracoes.");
+			//Checa dependencias de modulos
+			$tmpErrors = ModulesHelper::checkModuleDependencies($dependencias, $explodedLoadedModules, $explodedLoadedTypes);
 
-								//Adiciona para a lista de rollback
-								$rollback[htmlentities("LoadedModule", ENT_QUOTES, "UTF-8")] = htmlentities($moduleType.".".$moduleName, ENT_QUOTES, "UTF-8");
+			//Se houverem conflitos
+			if ($tmpErrors == false)
+			{
+				//Adiciona os erros para o array de erros
+				$errors = array_merge($errors, $tmpErrors);
+				$success = false;
+			}
+		}
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-								//Substitui conteudo da variavel pelo conteudo com o modulo novo
-								if (Configs::setConfig($moduleGeneralConfig, "modulosCarregados",$newLoadedModules) == false){
-									$success = false;
-								}
-							}
-							////////////////////////////////////////////////////////////////////////////////////////////////
+		////////////////////////////////////MARCA O MODULO COMO CARREGADO///////////////////////////////////////////////
+		if($success)
+		{
+			//Retorna status
+			$this->comment(Strings::STATUS_SETING_AS_LOADED);
+
+			//Checa dependencias de modulos
+			$loaded = ModulesHelper::setModuleAsLoaded($explodedLoadedModules, $moduleType, $moduleName);
+
+			//Se houverem conflitos
+			if ($loaded != true)
+			{
+				//Adiciona os erros para o array de erros
+				$errors = array_merge($errors, $loaded);
+				$success = false;
+			}
+		}
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 
 							//////////////////////////////////////Configurações/////////////////////////////////////////////
 							if ($success){//Se os comandos anteriores rodarem com sucesso
 								$this->comment("INFO: Alterando configuracoes.");
 
 								//Pega configurações
-								$configuracoes = Configs::getConfig( $configPath , "configuracoes" );
+								$configuracoes = Configs::getConfig( PathHelper::getModuleConfigPath($moduleType, $moduleName) , "configuracoes" );
 
 								//Inicia o Rollback de arquivos configurados
 								$rollback["module-configs"] = array();
@@ -506,7 +467,7 @@ class LoadModule extends Command
 									//Seta a flag de migrations para true no rollback
 									$rollback["migration"] = "true";
 									/////VERIFICAR SE MIGRATE RODOU DE FORMA ADEQUADA//////
-									if(!(count(\DB::table('project_modules')->where('module_name', $moduleType.'.'.$moduleName)->first())>0)){
+									if(!(count( DB::table('project_modules')->where('module_name', $moduleType.'.'.$moduleName)->first())>0)){
 										$this->comment("ERRO: Erro ao Rodar Migration.");
 										//seta flag de erro para true
 										$success = false;
@@ -526,7 +487,7 @@ class LoadModule extends Command
 								$rollbackPath = base_path().'/app/Modulos/'.$moduleType.'/'.$moduleName.'/Rollback/rollback.php';
 								//Cria registro no rollback dizendo que o arquivo foi copiado
 								$rollback["old-rollback"] = htmlentities(file_get_contents($rollbackPath), ENT_QUOTES, "UTF-8");
-								if (RollbackManager::buildRollback($rollback, $moduleRollbackFile, true) == false){
+								if (RollbackManager::buildRollback($rollback, PathHelper::getModuleRollbackFile($moduleType, $moduleName), true) == false){
 									$success = false;
 								}
 							}
@@ -541,7 +502,7 @@ class LoadModule extends Command
 									'.'.
 									$moduleName.
 									' '.
-									Configs::getConfig($configPath,"versao"));
+									Configs::getConfig(PathHelper::getModuleConfigPath($moduleType, $moduleName),"versao"));
 							}else{//Se ocorrer erro ao rodar os comandos
 								if ($abort == false){//Se Não abortou
 									//Comentario comando executado com erro
@@ -551,7 +512,7 @@ class LoadModule extends Command
 										'.'.
 										$moduleName.
 										' '.
-										Configs::getConfig($configPath,"versao"));
+										Configs::getConfig(PathHelper::getModuleConfigPath($moduleType, $moduleName),"versao"));
 								}else{//Se abortou
 									//Comentario comando executado com erro
 									$this->comment(
@@ -560,27 +521,27 @@ class LoadModule extends Command
 										'.'.
 										$moduleName.
 										' '.
-										Configs::getConfig($configPath,"versao"));
+										Configs::getConfig(PathHelper::getModuleConfigPath($moduleType, $moduleName),"versao"));
 								}
 								/////////////////////////////////////ARQUIVO DE ROLLBACK////////////////////////////////////////
 								RollbackManager::execRollback($rollback, $this);
 								////////////////////////////////////////////////////////////////////////////////////////////////
 							}
 							////////////////////////////////////////////////////////////////////////////////////////////////
-						}else{//arquivo de configurações não existe
-							$this->comment("ERRO: O Arquivo de Config de Modulos nao Existe.");
-						}
-					}else{//Se ja tiver sido carregado
-						$this->comment( "ERRO: Modulo ja carregado, execute 'php artisan module:remove' para remove-lo." );
-					}
-				}else{//Dependencia faltando
-					$this->comment("DICA: Rode o comando 'php artisan module:load' para cada um dos modulos faltantes.");
-				}
-			}else{//Conflito existente
-				$this->comment("DICA: Rode o comando 'php artisan module:loaded' visualizar uma lista dos modulos carregados.");
-			}
-		}else{//Se o modulo não existir
-			$this->comment("ERRO: Modulo chamado nao existe.");
-		}
+//						}else{//arquivo de configurações não existe
+//							$this->comment("ERRO: O Arquivo de Config de Modulos nao Existe.");
+//						}
+//					}else{//Se ja tiver sido carregado
+//						$this->comment( "ERRO: Modulo ja carregado, execute 'php artisan module:remove' para remove-lo." );
+//					}
+//				}else{//Dependencia faltando
+//					$this->comment("DICA: Rode o comando 'php artisan module:load' para cada um dos modulos faltantes.");
+//				}
+//			}else{//Conflito existente
+//				$this->comment("DICA: Rode o comando 'php artisan module:loaded' visualizar uma lista dos modulos carregados.");
+//			}
+//		}else{//Se o modulo não existir
+//			$this->comment("ERRO: Modulo chamado nao existe.");
+//		}
     }
 }
