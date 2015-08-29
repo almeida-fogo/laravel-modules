@@ -5,7 +5,6 @@ namespace AlmeidaFogo\LaravelModules\Commands;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
-use Mockery\CountValidator\Exception;
 
 use AlmeidaFogo\LaravelModules\LaravelModules\Configs;
 use AlmeidaFogo\LaravelModules\LaravelModules\ModulesHelper;
@@ -13,7 +12,6 @@ use AlmeidaFogo\LaravelModules\LaravelModules\RollbackManager;
 use AlmeidaFogo\LaravelModules\LaravelModules\RouteBuilder;
 use AlmeidaFogo\LaravelModules\LaravelModules\PathHelper;
 use AlmeidaFogo\LaravelModules\LaravelModules\Strings;
-use AlmeidaFogo\LaravelModules\LaravelModules\EscapeHelper;
 
 
 class LoadModule extends Command
@@ -85,6 +83,9 @@ class LoadModule extends Command
 		//Inicializa variavel de array dos tipos de modulos carregados
 		$explodedLoadedTypes = null;
 
+		//Seta override de todos os arquivos para false
+		$copyAll = false;
+
 		///////////////////////////////////PEGA MODULOS CARREGADOS EM FORMA DE ARRAY////////////////////////////////////
 		if($success)
 		{
@@ -120,7 +121,6 @@ class LoadModule extends Command
 		}
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
 		//////////////////////////////CHECA POR ERROS DE DEPENDENCIA ENTRE OS MODULOS///////////////////////////////////
 		if($success){
 			//Dependencias do modulo
@@ -146,161 +146,51 @@ class LoadModule extends Command
 			$this->comment(Strings::STATUS_SETING_AS_LOADED);
 
 			//Checa dependencias de modulos
-			$loaded = ModulesHelper::setModuleAsLoaded($explodedLoadedModules, $moduleType, $moduleName);
+			$tmpErrors = ModulesHelper::setModuleAsLoaded($explodedLoadedModules, $moduleType, $moduleName, $rollback);
 
 			//Se houverem conflitos
-			if ($loaded != true)
+			if ($tmpErrors != true)
 			{
 				//Adiciona os erros para o array de erros
-				$errors = array_merge($errors, $loaded);
+				$errors = array_merge($errors, $tmpErrors);
 				$success = false;
 			}
 		}
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+		//////////////////////////////APLICA AS CONFIGURAÇÕES REQUERIDAS PELO MODULO////////////////////////////////////
+		if ($success){
+			$this->comment(Strings::STATUS_SETTING_MODULE_CONFIGS);
 
-		//TODO: Continue From Here.
-							//////////////////////////////////////Configurações/////////////////////////////////////////////
-							if ($success){//Se os comandos anteriores rodarem com sucesso
-								$this->comment("INFO: Alterando configuracoes.");
+			//Faz configurações requeridas pelo modulo
+			$tmpErrors = ModulesHelper::makeModuleConfigs($moduleType, $moduleName, $rollback);
 
-								//Pega configurações
-								$configuracoes = Configs::getConfig( PathHelper::getModuleConfigPath($moduleType, $moduleName) , "configuracoes" );
+			//Se existir algum problema
+			if ($tmpErrors != true)
+			{
+				//Adiciona os erros para o array de erros
+				$errors = array_merge($errors, $tmpErrors);
+				$success = false;
+			}
+		}
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-								//Inicia o Rollback de arquivos configurados
-								$rollback["module-configs"] = array();
+		//////////////////////////////////////////////ORDINARY FILE COPY////////////////////////////////////////////////
+		if ($success){
+			$this->comment(Strings::STATUS_COPYING_ORDINARY_FILES);
 
-								foreach ( $configuracoes as $configuracao => $valor )
-								{
-									if ( $valor != "" )
-									{
-										$path = explode('.',$configuracao);
-										array_pop($path);
-										$path = base_path().'/config/'.implode("/", $path).'.php';
+			//Faz copia de arquivos do modulo
+			$tmpErrors = ModulesHelper::makeModuleOrdinaryCopies($moduleType, $moduleName, $copyAll, $rollback, $this);
 
-										$configName = str_replace(".", "-", $configuracao);
-
-										//Inicia o Rollback de arquivos configurados
-										$rollback["module-configs"][htmlentities($configName, ENT_QUOTES, "UTF-8")] = array();
-
-										//Adiciona para a lista de rollback
-										$rollback["module-configs"][htmlentities($configName, ENT_QUOTES, "UTF-8")][htmlentities($path, ENT_QUOTES, "UTF-8")] = htmlentities(file_get_contents($path), ENT_QUOTES, "UTF-8");
-
-										//Se ao tentar configurar temos um erro, então:
-										if ( Configs::setLaravelConfig( $configuracao , $valor ) == false )
-										{
-											//Sinaliza na flag
-											$success = false;
-										}
-									}
-								}
-							}
-							////////////////////////////////////////////////////////////////////////////////////////////////
-
-							////////////////////////////////////FILE COPY (EXCEPT MIGRATIONS)///////////////////////////////
-							//Seta override de todos os arquivos para false
-							$all = false;
-							if ($success){//Se os comandos anteriores rodarem com sucesso
-								$this->comment("INFO: Copia arquivos.");
-
-								//Inicia o Rollback de arquivos copiados
-								$rollback["module-files"] = array();
-
-								//Cria array de quais pastas e arquivos devem ser copiados para onde
-								$paths = [
-										base_path().'/app/Modulos/'.$moduleType.'/'.$moduleName.'/Controllers/' => base_path().'/app/Http/Controllers/',
-										base_path().'/app/Modulos/'.$moduleType.'/'.$moduleName.'/Models/' => base_path().'/app/',
-										base_path().'/app/Modulos/'.$moduleType.'/'.$moduleName.'/Views/' => base_path().'/resources/views/'.$moduleType.'_'.$moduleName.'/',
-										base_path().'/app/Modulos/'.$moduleType.'/'.$moduleName.'/Public/' => base_path().'/public/'.$moduleType.'_'.$moduleName.'/',
-										base_path().'/app/Modulos/'.$moduleType.'/'.$moduleName.'/Public/css/' => base_path().'/public/'.$moduleType.'_'.$moduleName.'/css/',
-										base_path().'/app/Modulos/'.$moduleType.'/'.$moduleName.'/Public/js/' => base_path().'/public/'.$moduleType.'_'.$moduleName.'/js/',
-										base_path().'/app/Modulos/'.$moduleType.'/'.$moduleName.'/Public/imagens/' => base_path().'/public/'.$moduleType.'_'.$moduleName.'/imagens/',
-								];
-
-								//loop em todos os diretorios de destino
-								foreach($paths as $key => $value){
-									if(!is_dir($value)){//Se o diretorio não existir
-										//Cria o diretorio que não existe
-										if (mkdir($value)){
-											//Cria registro no rollback dizendo uma pasta foi criada
-											$rollback["dir-created"][] = $value;
-										}
-									}
-								}
-
-								//Loop em todas as pastas
-								foreach($paths as $key => $value){
-									if ($success){//Se os comandos anteriores rodarem com sucesso
-										//Copia lista de arquivos no diretorio para variavel arquivos
-										$arquivos = scandir($key);
-										//Loop em todos os arquivos do modulo
-										for( $i = 2; $i < count($arquivos); $i++){
-											if ($success && !is_dir($value.$arquivos[$i])){//Se os comandos anteriores rodarem com sucesso e o arquivo não for uma pasta
-
-												$explodedFileName  = explode("/", $value.$arquivos[$i]);
-												$filename = $explodedFileName[count($explodedFileName)-1];
-
-												//Verifica se o arquivo existe
-												if (!file_exists($value.$arquivos[$i])){
-													//Cria registro no rollback dizendo que o arquivo foi copiado
-													$rollback["module-files"][htmlentities($value.$arquivos[$i], ENT_QUOTES, "UTF-8")] = "";
-													//verifica se a copia ocorreu com sucesso
-													if (copy($key.$arquivos[$i], $value.$arquivos[$i]) == false){
-														//Se der erro seta a variavel $sucess para false
-														$success = false;
-														//Printa msg de erro
-														$this->comment("ERRO: Não foi possivel copiar o arquivo ".$value.$arquivos[$i].".");
-													}else{
-														//Printa no terminal que o arquivo foi copiado
-														$this->comment("INFO: Arquivo ".$value.$arquivos[$i]." copiado com sucesso.");
-													}
-												}else if (strtoupper($filename) != strtoupper('.gitkeep')){//Caso ja exista um arquivo com o mesmo nome no diretorio de destino
-													//Inicializa variavel que vai receber resposta do usuario dizendo o que fazer
-													// com o conflito
-													$answer = "";
-													//Enquanto o usuario não devolver uma resposta valida
-													while ($all != true && $answer != 'y' && $answer != 'n' && $answer !=
-														'a' && $answer != 'c'){
-														//Faz pergunta para o usuario de como proceder
-														$answer = $this->ask("O arquivo '".$value.$arquivos[$i]."' tem certeza que deseja substitui-lo? (y = yes, n = no, a = all, c = cancel)", false);
-													}
-													//Se a resposta for sim, ou all
-													if (strtolower($answer) == "y" || strtolower($answer) == "a" || $all == true){
-														//se a resposta for all
-														if (strtolower($answer) == "a"){
-															//seta variavel all para true
-															$all = true;
-														}
-														//Faz backup do arquivo que será substituido
-														$rollback["module-files"][htmlentities($value.$arquivos[$i], ENT_QUOTES, "UTF-8")] = htmlentities(file_get_contents($value.$arquivos[$i]), ENT_QUOTES, "UTF-8");
-														//verifica se a substituição ocorreu com sucesso
-														if (copy($key.$arquivos[$i], $value.$arquivos[$i]) == false){//Se houver erro ao copiar arquivo
-															//Se der erro seta a variavel $sucess para false
-															$success = false;
-															//Printa msg de erro
-															$this->comment("ERRO: Não foi possivel substituir o arquivo ".$key.$arquivos[$i].".");
-														}else{
-															//Printa no terminal que o arquivo foi substituido
-															$this->comment("INFO: Arquivo ".$key.$arquivos[$i]." substituido com sucesso.");
-														}
-													}else if (strtolower($answer) == "n"){//se a resposta for não
-														//Printa no terminal qu o arquivo foi pulado
-														$this->comment("INFO: Pulando arquivo ".$key.$arquivos[$i].".");
-													}else if (strtolower($answer) == "c"){//se a resposta foi cancelar
-														//Se for abortado seta a variavel $sucess para false
-														$success = false;
-														//Se for abortado seta a variavel $abort para true
-														$abort = true;
-														//break the file loop
-														break(2);
-													}
-												}
-											}
-										}
-									}
-								}
-							}
-							////////////////////////////////////////////////////////////////////////////////////////////////
+			//Se existir algum problema
+			if ($tmpErrors != true)
+			{
+				//Adiciona os erros para o array de erros
+				$errors = array_merge($errors, $tmpErrors);
+				$success = false;
+			}
+		}
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 							////////////////////////////////////FILE COPY (MIGRATIONS)//////////////////////////////////////
 							if ($success){//Se os comandos anteriores rodarem com sucesso
@@ -347,17 +237,17 @@ class LoadModule extends Command
 											// com o conflito
 											$answer = "";
 											//Enquanto o usuario não devolver uma resposta valida
-											while ($all != true && $answer != 'y' && $answer != 'n' && $answer !=
+											while ($copyAll != true && $answer != 'y' && $answer != 'n' && $answer !=
 												'a' && $answer != 'c'){
 												//Faz pergunta para o usuario de como proceder
 												$answer = $this->ask("O arquivo '".$migrationModulePath.$arquivos[$i]."' tem certeza que deseja substitui-lo? (y = yes, n = no, a = all, c = cancel)", false);
 											}
 											//Se a resposta for sim, ou all
-											if (strtolower($answer) == "y" || strtolower($answer) == "a" || $all == true){
+											if (strtolower($answer) == "y" || strtolower($answer) == "a" || $copyAll == true){
 												//se a resposta for all
 												if (strtolower($answer) == "a"){
 													//seta variavel all para true
-													$all = true;
+													$copyAll = true;
 												}
 
 												//Captura o numero da migration
