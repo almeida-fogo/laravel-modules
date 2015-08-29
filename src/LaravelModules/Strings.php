@@ -16,12 +16,15 @@ class Strings {
 	//CONFIG
 	const MODULE_SEPARATOR = " & ";
 	const MODULE_TYPE_NAME_SEPARATOR = '.';
-	const MODULE_CONFIG_CONFLICT = "conflitos";
-	const MODULE_CONFIG_DEPENDENCIES = "dependencias";
-	const MODULE_CONFIG_CONFLICT_SEPARATOR = '.';
-	const CONFIG_LOADED_MODULES = "modulosCarregados";
 	const MODULE_CONFIG_CONFIGS_SEPARATOR = ".";
 	const MODULE_CONFIG_CONFIGS_SEPARATOR_REPLACEMENT = '-';
+	const MODULE_CONFIG_CONFLICT_SEPARATOR = '.';
+
+	//CONFIG LABEL
+	const MODULE_CONFIG_CONFLICT = "conflitos";
+	const MODULE_CONFIG_DEPENDENCIES = "dependencias";
+	const CONFIG_LOADED_MODULES = "modulosCarregados";
+	const CONFIG_MIGRATIONS_COUNTER = "migrationsCounter";
 
 	//ROLLBACK
 	const ROLLBACK_LOADED_MODULE_TAG = "LoadedModule";
@@ -29,11 +32,17 @@ class Strings {
 	const ROLLBACK_ORDINARY_FILE_COPY_TAG = "module-files";
 	const ROLLBACK_DIR_CREATED_TAG = "dir-created";
 	const ROLLBACK_MODULE_ORDINARY_FILE_COPY_TAG = "module-files";
+	const ROLLBACK_MODULE_MIGRATION_FILE_TAG = "module-migration-files";
+	const ROLLBACK_MODULE_MIGRATION_DELETED_FILE_TAG = "module-migration-deleted-files";
+
+	//MIGRATIONS
+	const MIGRATIONS_WORD_SEPARATOR = "_";
 
 	//STATUS
 	const STATUS_SETING_AS_LOADED = "INFO: Carrendo no arquivo de configuracoes.";
 	const STATUS_SETTING_MODULE_CONFIGS = "INFO: Alterando configuracoes requeridas pelo modulo.";
 	const STATUS_COPYING_ORDINARY_FILES = "INFO: Copiando arquivos convencionais";
+	const STATUS_COPYING_MIGRATION_FILES = "INFO: Copiando arquivos das migrations";
 
 	//ANSWERS
 	const SHORT_YES = 'y';
@@ -53,7 +62,8 @@ class Strings {
 	 * @param string $conflito
 	 * @return string
 	 */
-	public static function moduleSpecificConflictError($conflito){
+	public static function moduleSpecificConflictError( $conflito )
+	{
 		return "ERRO: Existe um conflito com o modulo '$conflito' que esta carregado";
 	}
 
@@ -63,7 +73,8 @@ class Strings {
 	 * @param string $conflitoType
 	 * @return string
 	 */
-	public static function moduleTypeConflictError($conflitoType){
+	public static function moduleTypeConflictError( $conflitoType )
+	{
 		return "ERRO: Existe um conflito com o tipo do modulo '$conflitoType' que esta carregado";
 	}
 
@@ -73,7 +84,8 @@ class Strings {
 	 * @param string $dependencia
 	 * @return string
 	 */
-	public static function moduleSpecificDependencyError($dependencia){
+	public static function moduleSpecificDependencyError( $dependencia )
+	{
 		return "ERRO: Dependencia '$dependencia' faltando";
 	}
 
@@ -83,7 +95,8 @@ class Strings {
 	 * @param string $dependenciaType
 	 * @return string
 	 */
-	public static function moduleTypeDependencyError($dependenciaType){
+	public static function moduleTypeDependencyError( $dependenciaType )
+	{
 		return "ERRO: Dependencia do Tipo '$dependenciaType' faltando";
 	}
 
@@ -93,7 +106,8 @@ class Strings {
 	 * @param string $module
 	 * @return string
 	 */
-	public static function cantSetModuleAsLoadedError($module){
+	public static function cantSetModuleAsLoadedError( $module )
+	{
 		return "ERRO: Nao foi possivel definir o modulo '$module' como carregado";
 	}
 
@@ -103,11 +117,13 @@ class Strings {
 	 * @param string $module
 	 * @return string
 	 */
-	public static function moduleAlreadySetError($module){
+	public static function moduleAlreadySetError( $module )
+	{
 		return "ERRO: O modulo '$module' ja esta carregado";
 	}
 
-	public static function cantMakeModuleConfig($module, $configuration){
+	public static function cantMakeModuleConfig( $module , $configuration )
+	{
 		return "ERRO: Erro ao fazer configuração '$configuration' requerida pelo modulo '$module'";
 	}
 
@@ -117,7 +133,8 @@ class Strings {
 	 * @param string $fileName
 	 * @return string
 	 */
-	public static function ordinaryFileCopyError($fileName){
+	public static function ordinaryFileCopyError( $fileName )
+	{
 		return "ERRO: Não foi possivel copiar o arquivo $fileName";
 	}
 
@@ -127,7 +144,8 @@ class Strings {
 	 * @param string $fileName
 	 * @return string
 	 */
-	public static function ordinaryFileCopySuccess($fileName){
+	public static function ordinaryFileCopySuccess( $fileName )
+	{
 		return "INFO: Arquivo $fileName copiado com sucesso";
 	}
 
@@ -137,8 +155,9 @@ class Strings {
 	 * @param string $fileName
 	 * @return string
 	 */
-	public static function replaceOrdinaryFiles($fileName){
-		return "O arquivo '".$fileName."' tem certeza que deseja substitui-lo? (y = yes, n = no, a = all, c = cancel)";
+	public static function replaceOrdinaryFiles( $fileName )
+	{
+		return "O arquivo '" . $fileName . "' tem certeza que deseja substitui-lo? (y = yes, n = no, a = all, c = cancel)";
 	}
 
 	/**
@@ -147,7 +166,8 @@ class Strings {
 	 * @param string $fileName
 	 * @return string
 	 */
-	public static function ordinaryFileReplaceError($fileName){
+	public static function ordinaryFileReplaceError( $fileName )
+	{
 		return "ERRO: Não foi possivel substituir o arquivo $fileName";
 	}
 
@@ -157,10 +177,54 @@ class Strings {
 	 * @param string $commandName
 	 * @return string
 	 */
-	public static function userRequestedAbort($commandName = null){
-		$commandName = empty($commandName) ? '' : $commandName.' ';
-		return "ALERTA: O comando ".$commandName."foi abortado pelo usuario";
+	public static function userRequestedAbort( $commandName = null )
+	{
+		$commandName = empty( $commandName ) ? '' : $commandName . ' ';
+		return "ALERTA: O comando " . $commandName . "foi abortado pelo usuario";
 	}
 
+	/**
+	 * Timestamp string padding
+	 *
+	 * @param string $time
+	 * @return string
+	 */
+	public static function timestampPadding( $time = "0" )
+	{
+		return "0000_00_00_" . str_pad( $time , 6 , "0" , STR_PAD_LEFT );
+	}
+
+	/**
+	 * Retorna mensagem de arquivo de migration copiado com erro
+	 *
+	 * @param string $fileName
+	 * @return string
+	 */
+	public static function migrationsFileCopyError( $fileName )
+	{
+		return "ERRO: Não foi possivel copiar o arquivo da migration $fileName";
+	}
+
+	/**
+	 * Retorna pergunta ao usuario a respeito de substituir uma migration do projeto por outra do modulo
+	 *
+	 * @param string $fileName
+	 * @return string
+	 */
+	public static function replaceMigrationFiles( $fileName )
+	{
+		return "O arquivo '".$fileName."' já existe, tem certeza que deseja substitui-lo? (y = yes, n = no, a = all, c = cancel)";
+	}
+
+	/**
+	 * Retorna mensagem de arquivo de migration deletado com erro
+	 *
+	 * @param string $fileName
+	 * @return string
+	 */
+	public static function migrationsFileDeleteError( $fileName )
+	{
+		return "ERRO: Não foi possivel deletar o arquivo da migration $fileName";
+	}
 
 }

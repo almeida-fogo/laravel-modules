@@ -124,4 +124,22 @@ class PathHelper{
 		return base_path().'/public/'.$moduleType.'_'.$moduleName.$more.'/';
 	}
 
+	/**
+	 * @return string
+	 */
+	public static function getLaravelMigrationsPath()
+	{
+		return base_path().'/database/migrations/';
+	}
+
+	/**
+	 * @param string $moduleType
+	 * @param string $moduleName
+	 * @return string
+	 */
+	public static function getModuleMigrationsPath($moduleType, $moduleName)
+	{
+		return base_path().'/app/Modulos/'.$moduleType.'/'.$moduleName.'/Migrations/';
+	}
+
 }

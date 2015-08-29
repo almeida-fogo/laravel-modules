@@ -9,6 +9,7 @@
 namespace AlmeidaFogo\LaravelModules\LaravelModules;
 
 
+use Hamcrest\Text\StringStartsWith;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Mockery\Exception;
@@ -310,7 +311,7 @@ QUERY
 				//Copia lista de arquivos no diretorio para variavel arquivos
 				$arquivos = scandir($key);
 				//Loop em todos os arquivos do modulo
-				for( $i = 2; $i < count($arquivos); $i++){
+				for( $i = Constants::FIRST_FILE; $i < count($arquivos); $i++){
 					if (empty($errors) && !is_dir($value.$arquivos[$i])){//Se os comandos anteriores rodarem com sucesso e o arquivo não for uma pasta
 
 						$explodedFileName  = explode(Strings::PATH_SEPARATOR, $value.$arquivos[$i]);
@@ -356,6 +357,123 @@ QUERY
 								break(2);
 							}
 						}
+					}
+				}
+			}
+		}
+
+		return !empty($errors) ? $errors : true;
+	}
+
+	/**
+	 * Copia arquivos convencionais do modulo (qualquer coisa exceto migrations) para as respectivas pastas
+	 *
+	 * @param string $moduleType
+	 * @param string $moduleName
+	 * @param string $copyAll
+	 * @param array $rollback
+	 * @param Command $command
+	 * @return array|bool
+	 */
+	public static function makeMigrationsCopies($moduleType, $moduleName, &$copyAll, array &$rollback, Command $command){
+		$errors = [ ];
+
+		//Inicia o Rollback de arquivos copiados
+		$rollback[Strings::ROLLBACK_MODULE_MIGRATION_FILE_TAG] = array();
+		//Inicia o Rollback de arquivos deletados
+		$rollback[Strings::ROLLBACK_MODULE_MIGRATION_DELETED_FILE_TAG] = array();
+
+		//Copia lista de arquivos no diretorio de migrations para variavel arquivos
+		$arquivos = scandir(PathHelper::getModuleMigrationsPath($moduleType, $moduleName));
+		//Loop em todos os arquivos do modulo
+		for( $i = Constants::FIRST_FILE; $i < count($arquivos); $i++){
+			//Quebra as palavras  da migration dentro de um array
+			$explodedModuleMigrationName = explode(Strings::MIGRATIONS_WORD_SEPARATOR, $arquivos[$i]);
+			//Pega remove a parte do nome referente ao timestamp
+			$SimplifiedModuleMigrationName = implode(Strings::MIGRATIONS_WORD_SEPARATOR,array_slice($explodedModuleMigrationName, Constants::MIGRATION_FILE_NAME_ARRAY_START));
+
+			//Flag que indica se o arquivo existe
+			$migrationPos = false;
+			//Pega migrations do projeto
+			$migrationFiles = scandir(PathHelper::getLaravelMigrationsPath());
+			foreach ($migrationFiles as $migrationIndex => $migrationFile){
+				//Quebra as palavras  da migration dentro de um array
+				$explodedMigrationFileName = explode(Strings::MIGRATIONS_WORD_SEPARATOR, $migrationFile);
+				//Pega remove a parte do nome referente ao timestamp
+				$SimplifiedMigratioFileName = implode(Strings::MIGRATIONS_WORD_SEPARATOR,array_slice($explodedMigrationFileName, Constants::MIGRATION_FILE_NAME_ARRAY_START));
+				//Verifica se a migration já existe
+				if ($SimplifiedMigratioFileName == $SimplifiedModuleMigrationName){
+					//marca o arquivo de migration existente migration
+					$migrationPos = $migrationIndex;
+					//quebra o loop
+					break;
+				}
+			}
+
+			$explodedFileName  = explode(Strings::PATH_SEPARATOR, PathHelper::getModuleMigrationsPath($moduleType, $moduleName).$arquivos[$i]);
+			$filename = $explodedFileName[count($explodedFileName)-1];
+			if (strtoupper($filename) != strtoupper(Strings::GIT_KEEP_FILE_NAME)){
+				if ($migrationPos == false){//Se o arquivo não existir
+					$migrationCounter = Configs::getConfig(PathHelper::getModuleGeneralConfig(), Strings::CONFIG_MIGRATIONS_COUNTER);
+					Configs::setConfig(PathHelper::getModuleGeneralConfig(), Strings::CONFIG_MIGRATIONS_COUNTER, $migrationCounter+1);
+					if (copy(
+						PathHelper::getModuleMigrationsPath($moduleType, $moduleName).$arquivos[$i],
+						PathHelper::getLaravelMigrationsPath().Strings::timestampPadding($migrationCounter).Strings::MIGRATIONS_WORD_SEPARATOR.$SimplifiedModuleMigrationName
+					) == false){
+						$errors[] = Strings::migrationsFileCopyError($arquivos[$i]);
+					}
+					//Sinaliza o no arquivo copiado
+					$rollback[Strings::ROLLBACK_MODULE_MIGRATION_FILE_TAG][] = EscapeHelper::encode(
+						PathHelper::getLaravelMigrationsPath().Strings::timestampPadding($migrationCounter).Strings::MIGRATIONS_WORD_SEPARATOR.$SimplifiedModuleMigrationName
+					);
+				}else{//Se o arquivo ja existir
+					//Inicializa variavel que vai receber resposta do usuario dizendo o que fazer
+					// com o conflito
+					$answer = Strings::EMPTY_STRING;
+					//Enquanto o usuario não devolver uma resposta valida
+					while ($copyAll != true && $answer != Strings::SHORT_YES && $answer != Strings::SHORT_NO && $answer != Strings::SHORT_ALL && $answer != Strings::SHORT_CANCEL){
+						//Faz pergunta para o usuario de como proceder
+						$answer = $command->ask(Strings::replaceMigrationFiles($arquivos[$i]), false);
+					}
+					//Se a resposta for sim, ou all
+					if (strtolower($answer) == Strings::SHORT_YES || strtolower($answer) == Strings::SHORT_ALL || $copyAll == true){
+						//se a resposta for all
+						if (strtolower($answer) == Strings::SHORT_ALL){
+							//seta variavel all para true
+							$copyAll = true;
+						}
+
+						//Captura o numero da migration
+						$migrationCounter = Configs::getConfig(PathHelper::getLaravelMigrationsPath(), Strings::CONFIG_MIGRATIONS_COUNTER);
+						//Atualiza o contador de migrations
+						Configs::setConfig(PathHelper::getLaravelMigrationsPath(), Strings::CONFIG_MIGRATIONS_COUNTER, $migrationCounter+1);
+
+						//Sinaliza o no arquivo copiado
+						$rollback[Strings::ROLLBACK_MODULE_MIGRATION_FILE_TAG][] = EscapeHelper::encode(
+							PathHelper::getModuleMigrationsPath($moduleType, $moduleName).Strings::timestampPadding($migrationCounter).Strings::MIGRATIONS_WORD_SEPARATOR.$SimplifiedModuleMigrationName
+						);
+
+						//Faz backup do arquivo que será substituido
+						$rollback[Strings::ROLLBACK_MODULE_MIGRATION_DELETED_FILE_TAG][EscapeHelper::encode(PathHelper::getLaravelMigrationsPath().$migrationFiles[$migrationPos])] = EscapeHelper::encode(
+							file_get_contents(PathHelper::getModuleMigrationsPath($moduleType, $moduleName).$migrationFiles[$migrationPos])
+						);
+
+						//Deletar o arquivo antigo
+						if (unlink(PathHelper::getLaravelMigrationsPath().$migrationFiles[$migrationPos]) == false){
+							$errors[] = Strings::migrationsFileDeleteError($arquivos[$i]);
+						}
+
+						//verifica se a substituição ocorreu com sucesso
+						if (copy(
+								PathHelper::getModuleMigrationsPath($moduleType, $moduleName).$arquivos[$i],
+								Strings::timestampPadding($migrationCounter).Strings::MIGRATIONS_WORD_SEPARATOR.$SimplifiedModuleMigrationName) == false){
+							$errors[] = Strings::migrationsFileCopyError($arquivos[$i]);
+						}
+					}else if (strtolower($answer) == Strings::SHORT_CANCEL){//se a resposta foi cancelar
+						//Printa msg de erro
+						$errors[] = (Strings::userRequestedAbort());
+						//break the file loop
+						break;
 					}
 				}
 			}

@@ -192,104 +192,23 @@ class LoadModule extends Command
 		}
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-							////////////////////////////////////FILE COPY (MIGRATIONS)//////////////////////////////////////
-							if ($success){//Se os comandos anteriores rodarem com sucesso
-								$this->comment("INFO: Copia migrations.");
+		////////////////////////////////////////////MIGRATION FILES COPY////////////////////////////////////////////////
+		if ($success){
+			$this->comment(Strings::STATUS_COPYING_MIGRATION_FILES);
 
-								//Inicia o Rollback de arquivos copiados
-								$rollback["module-migration-files"] = array();
-								//Inicia o Rollback de arquivos deletados
-								$rollback["module-migration-deleted-files"] = array();
+			//Faz copia de arquivos do modulo
+			$tmpErrors = ModulesHelper::makeMigrationsCopies($moduleType, $moduleName, $copyAll, $rollback, $this);
 
-								$migrationConfigPath = base_path().'/app/Modulos/configs.php';
-								$migrationModulePath = base_path().'/app/Modulos/'.$moduleType.'/'.$moduleName.'/Migrations/';
-								$migrationPath = base_path().'/database/migrations/';
+			//Se existir algum problema
+			if ($tmpErrors != true)
+			{
+				//Adiciona os erros para o array de erros
+				$errors = array_merge($errors, $tmpErrors);
+				$success = false;
+			}
+		}
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-								//Copia lista de arquivos no diretorio de migrations para variavel arquivos
-								$arquivos = scandir($migrationModulePath);
-								//Loop em todos os arquivos do modulo
-								for( $i = 2; $i < count($arquivos); $i++){
-									$explodedModuleMigrationName = explode("_", $arquivos[$i]);
-									$SimplifiedModuleMigrationName = implode("_",array_slice($explodedModuleMigrationName, 4));
-
-									$migrationPos = false;
-									$migrationFiles = scandir($migrationPath);
-									foreach ($migrationFiles as $migrationIndex => $migrationFile){
-										$explodedMigrationFileName = explode("_", $migrationFile);
-										$SimplifiedMigratioFileName = implode("_",array_slice($explodedMigrationFileName, 4));
-										if ($SimplifiedMigratioFileName == $SimplifiedModuleMigrationName){
-											$migrationPos = $migrationIndex;
-											break;
-										}
-									}
-
-									$explodedFileName  = explode("/", $migrationModulePath.$arquivos[$i]);
-									$filename = $explodedFileName[count($explodedFileName)-1];
-									if (strtoupper($filename) != strtoupper('.gitkeep')){
-										if ($migrationPos == false){//Se o arquivo não existir
-											$migrationCounter = Configs::getConfig($migrationConfigPath, "migrationsCounter");
-											Configs::setConfig($migrationConfigPath, "migrationsCounter", $migrationCounter+1);
-											copy($migrationModulePath.$arquivos[$i], $migrationPath."0000_00_00_".str_pad($migrationCounter, 6, "0", STR_PAD_LEFT).'_'.$SimplifiedModuleMigrationName);
-											//Sinaliza o no arquivo copiado
-											$rollback["module-migration-files"][] = htmlentities($migrationPath."0000_00_00_".str_pad($migrationCounter, 6, "0", STR_PAD_LEFT).'_'.$SimplifiedModuleMigrationName, ENT_QUOTES, "UTF-8");
-										}else{//Se o arquivo ja existir
-											//Inicializa variavel que vai receber resposta do usuario dizendo o que fazer
-											// com o conflito
-											$answer = "";
-											//Enquanto o usuario não devolver uma resposta valida
-											while ($copyAll != true && $answer != 'y' && $answer != 'n' && $answer !=
-												'a' && $answer != 'c'){
-												//Faz pergunta para o usuario de como proceder
-												$answer = $this->ask("O arquivo '".$migrationModulePath.$arquivos[$i]."' tem certeza que deseja substitui-lo? (y = yes, n = no, a = all, c = cancel)", false);
-											}
-											//Se a resposta for sim, ou all
-											if (strtolower($answer) == "y" || strtolower($answer) == "a" || $copyAll == true){
-												//se a resposta for all
-												if (strtolower($answer) == "a"){
-													//seta variavel all para true
-													$copyAll = true;
-												}
-
-												//Captura o numero da migration
-												$migrationCounter = Configs::getConfig($migrationConfigPath, "migrationsCounter");
-												//Atualiza o contador de migrations
-												Configs::setConfig($migrationConfigPath, "migrationsCounter", $migrationCounter+1);
-
-												//Sinaliza o no arquivo copiado
-												$rollback["module-migration-files"][] = htmlentities($migrationPath."0000_00_00_".str_pad($migrationCounter, 6, "0", STR_PAD_LEFT).'_'.$SimplifiedModuleMigrationName, ENT_QUOTES, "UTF-8");
-
-												//Faz backup do arquivo que será substituido
-												$rollback["module-migration-deleted-files"][htmlentities($migrationPath.$migrationFiles[$migrationPos], ENT_QUOTES, "UTF-8")] = htmlentities(file_get_contents($migrationPath.$migrationFiles[$migrationPos]), ENT_QUOTES, "UTF-8");
-
-												//Deletar o arquivo antigo
-												unlink($migrationPath.$migrationFiles[$migrationPos]);
-
-												//verifica se a substituição ocorreu com sucesso
-												if (copy($migrationModulePath.$arquivos[$i], $migrationPath."0000_00_00_".str_pad($migrationCounter, 6, "0", STR_PAD_LEFT).'_'.$SimplifiedModuleMigrationName) == false){//Se houver erro ao copiar arquivo
-													//Se der erro seta a variavel $sucess para false
-													$success = false;
-													//Printa msg de erro
-													$this->comment("ERRO: Não foi possivel substituir o arquivo ".$migrationPath.$arquivos[$i].".");
-												}else{
-													//Printa no terminal que o arquivo foi substituido
-													$this->comment("INFO: Arquivo ".$migrationPath.$arquivos[$i]." substituido com sucesso.");
-												}
-											}else if (strtolower($answer) == "n"){//se a resposta for não
-												//Printa no terminal qu o arquivo foi pulado
-												$this->comment("INFO: Pulando arquivo ".$migrationPath.$arquivos[$i].".");
-											}else if (strtolower($answer) == "c"){//se a resposta foi cancelar
-												//Se for abortado seta a variavel $sucess para false
-												$success = false;
-												//Se for abortado seta a variavel $abort para true
-												$abort = true;
-												//break the file loop
-												break;
-											}
-										}
-									}
-								}
-							}
-							////////////////////////////////////////////////////////////////////////////////////////////////
 
 							/////////////////////////////////////ROUTES/////////////////////////////////////////////////////
 							if ($success){
@@ -384,6 +303,7 @@ class LoadModule extends Command
 							////////////////////////////////////////////////////////////////////////////////////////////////
 
 							///////////////////////////////////////RESPONSE (OUTPUT)////////////////////////////////////////
+							var_dump($errors);
 							if ($success){//Se os comandos rodarem com sucesso
 								//Comentario comando executado com sucesso
 								$this->comment(
@@ -392,27 +312,19 @@ class LoadModule extends Command
 									'.'.
 									$moduleName.
 									' '.
-									Configs::getConfig(PathHelper::getModuleConfigPath($moduleType, $moduleName),"versao"));
+									Configs::getConfig(PathHelper::getModuleConfigPath($moduleType, $moduleName),"versao")
+								);
 							}else{//Se ocorrer erro ao rodar os comandos
-								if ($abort == false){//Se Não abortou
-									//Comentario comando executado com erro
-									$this->comment(
-										'ERRO: Erro ao executar o comando em '.
-										$moduleType.
-										'.'.
-										$moduleName.
-										' '.
-										Configs::getConfig(PathHelper::getModuleConfigPath($moduleType, $moduleName),"versao"));
-								}else{//Se abortou
-									//Comentario comando executado com erro
-									$this->comment(
-										'ABORT: O comando foi abortado '.
-										$moduleType.
-										'.'.
-										$moduleName.
-										' '.
-										Configs::getConfig(PathHelper::getModuleConfigPath($moduleType, $moduleName),"versao"));
-								}
+								//Comentario comando executado com erro
+								$this->comment(
+									'ERRO: Erro ao executar o comando em '.
+									$moduleType.
+									'.'.
+									$moduleName.
+									' '.
+									Configs::getConfig(PathHelper::getModuleConfigPath($moduleType, $moduleName),"versao")
+								);
+
 								/////////////////////////////////////ARQUIVO DE ROLLBACK////////////////////////////////////////
 								RollbackManager::execRollback($rollback, $this);
 								////////////////////////////////////////////////////////////////////////////////////////////////
