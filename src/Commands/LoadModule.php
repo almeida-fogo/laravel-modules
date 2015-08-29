@@ -180,7 +180,7 @@ class LoadModule extends Command
 			$this->comment(Strings::STATUS_COPYING_ORDINARY_FILES);
 
 			//Faz copia de arquivos do modulo
-			$tmpErrors = ModulesHelper::makeModuleOrdinaryCopies($moduleType, $moduleName, $copyAll, $rollback, $this);
+			$tmpErrors = ModulesHelper::makeOrdinaryCopies($moduleType, $moduleName, $copyAll, $rollback, $this);
 
 			//Se existir algum problema
 			if ($tmpErrors != true)
