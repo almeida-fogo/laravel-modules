@@ -14,7 +14,7 @@ class RollbackManager {
 	 * @param bool $buildPHPHeader
 	 * @return bool|int|string
 	 */
-	public static function buildRollback(array $rollbackArray, $rollbackFile, $buildPHPHeader){
+	public static function buildRollback(array $rollbackArray, $rollbackFile, $buildPHPHeader = true){
 		if ($buildPHPHeader){
 			//build php route header
 			$phpStringArray =
@@ -72,10 +72,12 @@ class RollbackManager {
 	 */
 	public static function execRollback($rollback, Command $handleContext)
 	{
+		//TODO: Refatorar esse codigo
+
 		$success = true;
 
-		$handleContext->info("INFO: Executando Rollback");
 		if ( !is_array($rollback) && file_exists($rollback)) {
+			$handleContext->info("INFO: Executando Rollback");
 			$rollback = Configs::getConfig($rollback);
 			$handleContext->info("INFO: Transformando RollbackFile em Array.");
 			if ($rollback == false) {
@@ -85,8 +87,8 @@ class RollbackManager {
 		}
 
 		try{
-			$handleContext->info("INFO: Verificando Se o BD de Migrations Existe.");
 			if (!(count(\DB::select(\DB::raw("SHOW TABLES LIKE 'project_modules';")))>0)){
+				$handleContext->info("INFO: Verificando Se o BD de Migrations Existe.");
 				$handleContext->info("ERRO: Arquivo de Controle de Migrations nao Existe.");
 				$success = false;
 			}
@@ -122,8 +124,8 @@ class RollbackManager {
 					}
 				}
 			}
-			$handleContext->info("INFO: Rollback do RouteBuilder.");
 			if (array_key_exists("routes-builder", $rollback)) {
+				$handleContext->info("INFO: Rollback do RouteBuilder.");
 				$handleContext->info("INFO: Executando RouteBuilder Rollback.");
 				$oldRoutesBuilder = html_entity_decode($rollback["routes-builder"], ENT_QUOTES, "UTF-8");
 				$routesBuilderFile = base_path()."/app/Modulos/RouteBuilder.php";
@@ -140,8 +142,8 @@ class RollbackManager {
 
 			}
 
-			$handleContext->info("INFO: Rollback das Routes.");
 			if (array_key_exists("old-routes", $rollback)) {
+				$handleContext->info("INFO: Rollback das Routes.");
 				$handleContext->info("INFO: Executando Routes Rollback.");
 				//diretorio para o arquivo de rotas do modulo
 				$routesPath = base_path().'/app/Http/routes.php';
@@ -158,8 +160,8 @@ class RollbackManager {
 				}
 			}
 
-			$handleContext->info("INFO: Rollback dos Arquivos de Migration.");
 			if (array_key_exists("module-migration-files", $rollback)) {
+				$handleContext->info("INFO: Rollback dos Arquivos de Migration.");
 				$counterFilesDeleted = 0;
 
 				$handleContext->info("INFO: Deletando Migrations Copiadas.");
@@ -205,8 +207,8 @@ class RollbackManager {
 			}
 		}
 
-		$handleContext->info("INFO: Rollback dos Arquivos do Modulo (Views, Controllers, Models, CSS, etc).");
 		if (array_key_exists("module-files", $rollback)) {
+			$handleContext->info("INFO: Rollback dos Arquivos do Modulo (Views, Controllers, Models, CSS, etc).");
 			foreach($rollback["module-files"] as $path=>$fileContent){
 				if($fileContent == ""){
 					$explodePath = explode("/", $path);
@@ -227,8 +229,8 @@ class RollbackManager {
 			}
 		}
 
-		$handleContext->info("INFO: Rollback das Configuracoes Feitas Pelo Modulo.");
 		if (array_key_exists("module-configs", $rollback)) {
+			$handleContext->info("INFO: Rollback das Configuracoes Feitas Pelo Modulo.");
 			$revertedConfigs = array_reverse($rollback["module-configs"]);
 			foreach($revertedConfigs as $configName=>$fileContent){
 				$path = explode('-',$configName);
@@ -248,8 +250,8 @@ class RollbackManager {
 			}
 		}
 
-		$handleContext->info("INFO: Remove Modulo da Lista de Modulos Carregados.");
 		if (array_key_exists("LoadedModule", $rollback)) {
+			$handleContext->info("INFO: Remove Modulo da Lista de Modulos Carregados.");
 			$loadedModules = getConfig(base_path()."/app/Modulos/configs.php", "modulosCarregados");
 			if($loadedModules != false){
 				$explodedModules = explode(" & ", $loadedModules);
@@ -270,8 +272,8 @@ class RollbackManager {
 			}
 		}
 
-		$handleContext->info("INFO: Rollback do Rollback do Modulo.");
 		if (array_key_exists("old-rollback", $rollback)) {
+			$handleContext->info("INFO: Rollback do Rollback do Modulo.");
 			$handleContext->info("INFO: Executando Rollback do Arquivo de Rollback.");
 			if (array_key_exists("LoadedModule", $rollback)) {
 				$explodedModulePathNTitle = explode(".", $rollback["LoadedModule"]);
@@ -299,8 +301,8 @@ class RollbackManager {
 			}
 		}
 
-		$handleContext->info("INFO: Removendo Pastas Criadas.");
 		if (array_key_exists("dir-created", $rollback)) {
+			$handleContext->info("INFO: Removendo Pastas Criadas.");
 			$createdDirs = $rollback["dir-created"];
 			if(is_array($createdDirs)){
 				foreach($createdDirs as $dir){

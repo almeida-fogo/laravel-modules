@@ -40,28 +40,33 @@ class ModulesHelper {
 		return $types;
 	}
 
-	public static function createMigrationsCheckTable(Command $handleContext){
+	/**
+	 * Cria a tabela de verificação de migrations
+	 *
+	 * @return array|bool
+     */
+    public static function createMigrationsCheckTable(){
 		try{
-			if (!(count(DB::select(DB::raw("SHOW TABLES LIKE 'project_modules';")))>0)){
-				DB::select( DB::raw(
-<<<QUERY
-										CREATE TABLE project_modules
+			$errors = [];
+
+			if (!(count(DB::select(DB::raw("SHOW TABLES LIKE '".Strings::TABLE_PROJECT_MODULES."';")))>0)){
+				DB::select( DB::raw("
+										CREATE TABLE ".Strings::TABLE_PROJECT_MODULES."
 					(
 						id			int NOT NULL PRIMARY KEY AUTO_INCREMENT,
-						module_name	VARCHAR (255) UNIQUE NOT NULL
+						".Strings::TABLE_PROJECT_MODULES_NAME."	VARCHAR (255) UNIQUE NOT NULL
 					)
-QUERY
+					"
 				));
-				if(!(count( DB::select( DB::raw("SHOW TABLES LIKE 'project_modules';")))>0)){
-					$handleContext->info("ERRO: Erro ao Criar Table de Modulos Carregados.");
-					return false;
+				if(!(count( DB::select( DB::raw("SHOW TABLES LIKE '".Strings::TABLE_PROJECT_MODULES."';")))>0)){
+					$errors[] = Strings::ERROR_CREATE_MIGRATION_CHECK_TABLE;
 				}
 			}
 		}catch (Exception $e){
-			$handleContext->info("ERRO: Erro ao Criar Table de Moculos Carregados.");
-			return false;
+            $errors[] = Strings::ERROR_CREATE_MIGRATION_CHECK_TABLE;
 		}
-		return true;
+
+        return $errors;
 	}
 
 	/**
@@ -70,10 +75,10 @@ QUERY
 	 * @param string $oldLoadedModules
 	 * @param string $moduleType
 	 * @param string $moduleName
-	 * @return array|null
+	 * @return array
 	 */
 	public static function getLoadedModules($oldLoadedModules, $moduleType, $moduleName){
-		$explodedLoadedModules = null;
+		$explodedLoadedModules = [];
 
 		//Verifica se o arquivo de configuração do modulo não existe
 		if (file_exists( PathHelper::getModuleConfigPath( $moduleType , $moduleName ) ))
@@ -82,7 +87,7 @@ QUERY
 			if ( empty($oldLoadedModules) )
 			{
 				//Carrega array vazio
-				$explodedLoadedModules = array ();
+				$explodedLoadedModules = [];
 			}
 			else
 			{
@@ -520,6 +525,69 @@ QUERY
 			}
 		}else{
 			$errors[] = Strings::ERROR_ROUTES_BUILDER_GEN;
+		}
+
+		return !empty($errors) ? $errors : true;
+	}
+
+	/**
+	 * Constroi as rotas dos modulos
+	 *
+	 * @param string $moduleType
+	 * @param string $moduleName
+	 * @param array $rollback
+	 * @param Command $command
+	 * @return array|bool
+	 */
+	public static function runMigrations($moduleType, $moduleName, array &$rollback, Command $command)
+	{
+		try {
+			$errors = [ ];
+
+			//Roda dump autoload
+			shell_exec(Strings::COMMAND_DUMP_AUTOLOAD);
+			//Tenta Rodar a migration
+			$command->call(Strings::COMMAND_MIGRATE);
+			//Seta a flag de migrations para true no rollback
+			$rollback[Strings::ROLLBACK_MIGRATE] = Strings::TRUE_STRING;
+			/////VERIFICAR SE MIGRATE RODOU DE FORMA ADEQUADA//////
+			if ( !( count(DB::table(Strings::TABLE_PROJECT_MODULES)
+							->where(Strings::TABLE_PROJECT_MODULES_NAME,
+									$moduleType . Strings::MODULE_TYPE_NAME_SEPARATOR . $moduleName)
+							->first()) > 0 )
+			) {
+				$errors[] = Strings::ERROR_MIGRATE;
+			}
+			///////////////////////////////////////////////////////
+		} catch (\Exception $e) {
+			$errors[] = Strings::migrationException($e->getMessage());
+		}
+
+		return !empty($errors) ? $errors : true;
+	}
+	/**
+	 * Constroi o arquivo de rollback
+	 *
+	 * @param string $moduleType
+	 * @param string $moduleName
+	 * @param array $rollback
+	 * @return array|bool
+	 */
+	public static function createRollbackFile($moduleType, $moduleName, array &$rollback)
+	{
+		$errors = [];
+
+		//Cria registro no rollback dizendo que o arquivo foi copiado
+		$rollback[Strings::ROLLBACK_OLD_ROLLBACK_TAG] = EscapeHelper::encode(
+				file_get_contents(PathHelper::getModuleRollbackFile($moduleType,$moduleName))
+		);
+
+		if (RollbackManager::buildRollback(
+						$rollback,
+						PathHelper::getModuleRollbackFile($moduleType, $moduleName)
+				) == false
+		) {
+			$errors[] = Strings::ERROR_CREATE_ROLLBACK_FILE;
 		}
 
 		return !empty($errors) ? $errors : true;

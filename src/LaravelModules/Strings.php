@@ -10,8 +10,15 @@ namespace AlmeidaFogo\LaravelModules\LaravelModules;
 
 class Strings {
 
-	//ERRORS
-	const MODULE_NOT_FOUND = "Modulo inexistente ou corrompido";
+    //TABLES
+    const TABLE_PROJECT_MODULES = 'project_modules';
+    const TABLE_PROJECT_MODULES_NAME = 'module_name';
+    //COMMANDS
+    const COMMAND_DUMP_AUTOLOAD = "composer dump-autoload";
+    const COMMAND_MIGRATE = "migrate";
+
+    //ASK
+    const MODULE_TYPE = 'Qual tipo de modulo deseja carregar';
 
 	//CONFIG
 	const MODULE_SEPARATOR = " & ";
@@ -36,22 +43,30 @@ class Strings {
 	const ROLLBACK_MODULE_MIGRATION_DELETED_FILE_TAG = "module-migration-deleted-files";
 	const ROLLBACK_ROUTES_BUILDER_TAG = "routes-builder";
 	const ROLLBACK_OLD_ROUTES_TAG = "old-routes";
+    const ROLLBACK_MIGRATE = "migration";
+    const ROLLBACK_OLD_ROLLBACK_TAG = "old-rollback";
 
 	//MIGRATIONS
 	const MIGRATIONS_WORD_SEPARATOR = "_";
 
 	//STATUS
-	const STATUS_SETING_AS_LOADED = "INFO: Carrendo no arquivo de configuracoes.";
-	const STATUS_SETTING_MODULE_CONFIGS = "INFO: Alterando configuracoes requeridas pelo modulo.";
+	const STATUS_SETING_AS_LOADED = "INFO: Carrendo no arquivo de configuracoes";
+	const STATUS_SETTING_MODULE_CONFIGS = "INFO: Alterando configuracoes requeridas pelo modulo";
 	const STATUS_COPYING_ORDINARY_FILES = "INFO: Copiando arquivos convencionais";
 	const STATUS_COPYING_MIGRATION_FILES = "INFO: Copiando arquivos das migrations";
 	const STATUS_BUILDING_ROUTES = "INFO: Constuindo rotas do modulo";
+    const STATUS_RUNING_MIGRATIONS = "INFO: Rodando migrations do modulo";
+    const STATUS_GEN_ROLLBACK = "INFO: Constroi Arquivo de Rollback";
 
 	//ERRORS
 	const ERROR_ROUTES_FILE_SAVE = "ERRO: Problemas ao gerar o arquivo de rotas";
 	const ERROR_ROUTES_BUILDER_SAVE = "ERRO: Problemas ao salvar RouterBuilder";
 	const ERROR_INCLUDE_TO_ROUTES_BUILDER_SAVE = "ERRO: Problemas ao incluir rotas ao RouterBuilder";
 	const ERROR_ROUTES_BUILDER_GEN = "ERRO: Problemas ao gerar RoutesBuilder Array";
+    const ERROR_MODULE_NOT_FOUND = "ERRO: Modulo inexistente ou corrompido";
+    const ERROR_MIGRATE = "ERRO: Erro ao Rodar Migration";
+    const ERROR_CREATE_ROLLBACK_FILE = "ERRO: Nao foi possivel criar um arquivo de rollback";
+    const ERROR_CREATE_MIGRATION_CHECK_TABLE = "ERRO: Erro ao Criar Table de Modulos Carregados";
 
 	//ANSWERS
 	const SHORT_YES = 'y';
@@ -64,6 +79,7 @@ class Strings {
 	const PATH_SEPARATOR = '/';
 	const PHP_EXTENSION = '.php';
 	const GIT_KEEP_FILE_NAME = '.gitkeep';
+    const TRUE_STRING = "true";
 
 	/**
 	 * Retorna mensagem de conflito entre modulos
@@ -237,8 +253,6 @@ class Strings {
 		return "ERRO: Não foi possivel deletar o arquivo da migration $fileName";
 	}
 
-
-
     /**
      * Retorna mensagem perguntando qual dos modulos o usuário deseja carregar para esse tipo de módulo
      *
@@ -247,6 +261,28 @@ class Strings {
      */
     public static function moduleNameForThisType($moduleType){
         return "Qual o nome do modulo do tipo \"".$moduleType."\" deseja carregar?";
+    }
+
+    /**
+     * Retorna a Exception ao rodar a migration
+     *
+     * @param string $message
+     * @return string
+     */
+    public static function migrationException($message){
+        return "ERRO: Exception ao Rodar Migration: $message";
+    }
+
+    /**
+     * Retorna a mensagem de sucesso ao rodar comando module:load
+     *
+     * @param string $moduleType
+     * @param string $moduleName
+     * @return string
+     */
+    public static function successfulyRunModuleLoad($moduleType, $moduleName){
+        return 'Comando executado com sucesso. '.$moduleType.'.'.$moduleName.' '.
+        Configs::getConfig(PathHelper::getModuleConfigPath($moduleType, $moduleName), "versao");
     }
 
 }

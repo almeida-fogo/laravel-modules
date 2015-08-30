@@ -54,9 +54,6 @@ class LoadModule extends Command
 		//Nome do modulo
 		$moduleName = $this->argument("name");
 
-		//Seta status inicial para True
-		$success = true;
-
 		//Inicializa variavel erros
 		$errors = [];
 
@@ -71,9 +68,6 @@ class LoadModule extends Command
 			$moduleName = $this->ask(Strings::moduleNameForThisType($moduleType));
 		}
 
-		//Cria table de verificação das migrations
-		$success = ModulesHelper::createMigrationsCheckTable($this);
-
 		//Modulos ja carregados
 		$oldLoadedModules = Configs::getConfig(PathHelper::getModuleGeneralConfig(), Strings::CONFIG_LOADED_MODULES);
 
@@ -86,25 +80,16 @@ class LoadModule extends Command
 		//Seta override de todos os arquivos para false
 		$copyAll = false;
 
-		///////////////////////////////////PEGA MODULOS CARREGADOS EM FORMA DE ARRAY////////////////////////////////////
-		if($success)
-		{
-			//Pega modulos carredos em forma de array
-			$explodedLoadedModules = ModulesHelper::getLoadedModules($oldLoadedModules, $moduleType , $moduleName );
-			//se houver erro
-			if ( is_null($explodedLoadedModules) )
-			{
-				//Adiciona o erro para o array de erros
-				$errors[ ] = Strings::MODULE_NOT_FOUND;
-				$success = false;
-			}
-		}
-		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //Pega modulos carredos em forma de array
+        $explodedLoadedModules = ModulesHelper::getLoadedModules($oldLoadedModules, $moduleType , $moduleName );
 
-		//TODO: checar se o modulo ja esta carregado
+        //Cria table de verificação das migrations
+        $errors = ModulesHelper::createMigrationsCheckTable();
+
+        //TODO: checar se o modulo ja esta carregado
 
 		/////////////////////////////////CHECA POR CONFLITOS ENTRE OS MODULOS///////////////////////////////////////////
-		if($success){
+		if(empty($errors)){
 			//Separa os tipos dos modulos carregados em um array
 			$explodedLoadedTypes = ModulesHelper::explodeTypes( $explodedLoadedModules );
 			//Pega configuração de conflitos do modulo
@@ -118,13 +103,12 @@ class LoadModule extends Command
 			{
 				//Adiciona os erros para o array de erros
 				$errors = array_merge($errors, $tmpErrors);
-				$success = false;
 			}
 		}
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		//////////////////////////////CHECA POR ERROS DE DEPENDENCIA ENTRE OS MODULOS///////////////////////////////////
-		if($success){
+		if(empty($errors)){
 			//Dependencias do modulo
 			$dependencias = Configs::getConfig(PathHelper::getModuleConfigPath($moduleType, $moduleName), Strings::MODULE_CONFIG_DEPENDENCIES);
 
@@ -136,13 +120,12 @@ class LoadModule extends Command
 			{
 				//Adiciona os erros para o array de erros
 				$errors = array_merge($errors, $tmpErrors);
-				$success = false;
 			}
 		}
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		////////////////////////////////////MARCA O MODULO COMO CARREGADO///////////////////////////////////////////////
-		if($success)
+		if(empty($errors))
 		{
 			//Retorna status
 			$this->comment(Strings::STATUS_SETING_AS_LOADED);
@@ -155,13 +138,12 @@ class LoadModule extends Command
 			{
 				//Adiciona os erros para o array de erros
 				$errors = array_merge($errors, $tmpErrors);
-				$success = false;
 			}
 		}
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		//////////////////////////////APLICA AS CONFIGURAÇÕES REQUERIDAS PELO MODULO////////////////////////////////////
-		if ($success){
+		if (empty($errors)){
 			$this->comment(Strings::STATUS_SETTING_MODULE_CONFIGS);
 
 			//Faz configurações requeridas pelo modulo
@@ -172,13 +154,12 @@ class LoadModule extends Command
 			{
 				//Adiciona os erros para o array de erros
 				$errors = array_merge($errors, $tmpErrors);
-				$success = false;
 			}
 		}
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		//////////////////////////////////////////////ORDINARY FILE COPY////////////////////////////////////////////////
-		if ($success){
+		if (empty($errors)){
 			$this->comment(Strings::STATUS_COPYING_ORDINARY_FILES);
 
 			//Faz copia de arquivos do modulo
@@ -189,16 +170,15 @@ class LoadModule extends Command
 			{
 				//Adiciona os erros para o array de erros
 				$errors = array_merge($errors, $tmpErrors);
-				$success = false;
 			}
 		}
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		////////////////////////////////////////////MIGRATION FILES COPY////////////////////////////////////////////////
-		if ($success){
+		if (empty($errors)){
 			$this->comment(Strings::STATUS_COPYING_MIGRATION_FILES);
 
-			//Faz copia de arquivos do modulo
+			//Faz copia de arquivos de migrations do modulo
 			$tmpErrors = ModulesHelper::makeMigrationsCopies($moduleType, $moduleName, $copyAll, $rollback, $this);
 
 			//Se existir algum problema
@@ -206,13 +186,12 @@ class LoadModule extends Command
 			{
 				//Adiciona os erros para o array de erros
 				$errors = array_merge($errors, $tmpErrors);
-				$success = false;
 			}
 		}
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		////////////////////////////////////////////////ROUTE_BUILDER///////////////////////////////////////////////////
-		if ($success){
+		if (empty($errors)){
 			$this->comment(Strings::STATUS_BUILDING_ROUTES);
 
 			//Gera arquivo de rotas
@@ -223,93 +202,54 @@ class LoadModule extends Command
 			{
 				//Adiciona os erros para o array de erros
 				$errors = array_merge($errors, $tmpErrors);
-				$success = false;
 			}
 		}
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-							/////////////////////////////////////MIGRATIONS/////////////////////////////////////////////////
-							//Talvez tenhamos problemas com os timestamps das migrations
-							if ($success){//Se os comandos anteriores rodarem com sucesso
-								$this->comment("INFO: Roda migrations.");
-								try{
-									//Roda dump autoload
-									shell_exec("composer dump-autoload");
-									//Tenta Rodar a migration
-									$this->call("migrate");
-									//Roda dump autoload
-									shell_exec("composer dump-autoload");
-									//Seta a flag de migrations para true no rollback
-									$rollback["migration"] = "true";
-									/////VERIFICAR SE MIGRATE RODOU DE FORMA ADEQUADA//////
-									if(!(count( DB::table('project_modules')->where('module_name', $moduleType.'.'.$moduleName)->first())>0)){
-										$this->comment("ERRO: Erro ao Rodar Migration.");
-										//seta flag de erro para true
-										$success = false;
-									}
-									///////////////////////////////////////////////////////
-								}catch(\Exception $e){
-									//Se houver um erro sinaliza para que o comando seja desfeito ao fim do codigo
-									$success = false;
-								}
-							}
-							////////////////////////////////////////////////////////////////////////////////////////////////
+		////////////////////////////////////////////////RUN MODULE MIGRATIONS///////////////////////////////////////////
+		if (empty($errors)){
+			$this->comment(Strings::STATUS_RUNING_MIGRATIONS);
 
-							/////////////////////////////////////ARQUIVO DE ROLLBACK////////////////////////////////////////
-							if ($success){
-								$this->comment("INFO: Constroi Arquivo de Rollback.");
-								//diretorio para o arquivo de rotas do modulo
-								$rollbackPath = base_path().'/app/Modulos/'.$moduleType.'/'.$moduleName.'/Rollback/rollback.php';
-								//Cria registro no rollback dizendo que o arquivo foi copiado
-								$rollback["old-rollback"] = htmlentities(file_get_contents($rollbackPath), ENT_QUOTES, "UTF-8");
-								if (RollbackManager::buildRollback($rollback, PathHelper::getModuleRollbackFile($moduleType, $moduleName), true) == false){
-									$success = false;
-								}
-							}
-							////////////////////////////////////////////////////////////////////////////////////////////////
+			//Roda os arquivos de migrations
+			$tmpErrors = ModulesHelper::runMigrations($moduleType, $moduleName, $rollback, $this);
 
-							///////////////////////////////////////RESPONSE (OUTPUT)////////////////////////////////////////
-							var_dump($errors);
-							if ($success){//Se os comandos rodarem com sucesso
-								//Comentario comando executado com sucesso
-								$this->comment(
-									'Comando executado com sucesso. '.
-									$moduleType.
-									'.'.
-									$moduleName.
-									' '.
-									Configs::getConfig(PathHelper::getModuleConfigPath($moduleType, $moduleName),"versao")
-								);
-							}else{//Se ocorrer erro ao rodar os comandos
-								//Comentario comando executado com erro
-								$this->comment(
-									'ERRO: Erro ao executar o comando em '.
-									$moduleType.
-									'.'.
-									$moduleName.
-									' '.
-									Configs::getConfig(PathHelper::getModuleConfigPath($moduleType, $moduleName),"versao")
-								);
+			//Se existir algum problema
+			if ($tmpErrors != true)
+			{
+				//Adiciona os erros para o array de erros
+				$errors = array_merge($errors, $tmpErrors);
+			}
+		}
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-								/////////////////////////////////////ARQUIVO DE ROLLBACK////////////////////////////////////////
-								RollbackManager::execRollback($rollback, $this);
-								////////////////////////////////////////////////////////////////////////////////////////////////
-							}
-							////////////////////////////////////////////////////////////////////////////////////////////////
-//						}else{//arquivo de configurações não existe
-//							$this->comment("ERRO: O Arquivo de Config de Modulos nao Existe.");
-//						}
-//					}else{//Se ja tiver sido carregado
-//						$this->comment( "ERRO: Modulo ja carregado, execute 'php artisan module:remove' para remove-lo." );
-//					}
-//				}else{//Dependencia faltando
-//					$this->comment("DICA: Rode o comando 'php artisan module:load' para cada um dos modulos faltantes.");
-//				}
-//			}else{//Conflito existente
-//				$this->comment("DICA: Rode o comando 'php artisan module:loaded' visualizar uma lista dos modulos carregados.");
-//			}
-//		}else{//Se o modulo não existir
-//			$this->comment("ERRO: Modulo chamado nao existe.");
-//		}
+		////////////////////////////////////////////////GENERATE ROLLBACK FILE//////////////////////////////////////////
+		if (empty($errors)){
+			$this->comment(Strings::STATUS_GEN_ROLLBACK);
+
+			//Gera arquivo de rollback
+			$tmpErrors = ModulesHelper::createRollbackFile($moduleType, $moduleName, $rollback);
+
+			//Se existir algum problema
+			if ($tmpErrors != true)
+			{
+				//Adiciona os erros para o array de erros
+				$errors = array_merge($errors, $tmpErrors);
+			}
+		}
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+		////////////////////////////////////////////////RESPONSE (OUTPUT)///////////////////////////////////////////////
+		if (empty($errors)){//Se os comandos rodarem com sucesso
+			//Comentario comando executado com sucesso
+			$this->comment(Strings::successfulyRunModuleLoad($moduleType, $moduleName));
+		}else{//Se ocorrer erro ao rodar os comandos
+            foreach ($errors as $error) {
+                $this->error($error);
+            }
+            /////////////////////////////////////ARQUIVO DE ROLLBACK////////////////////////////////////////
+			RollbackManager::execRollback($rollback, $this);
+			////////////////////////////////////////////////////////////////////////////////////////////////
+		}
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     }
 }
