@@ -131,6 +131,7 @@ class Strings {
 		return "ERRO: O modulo '$module' ja esta carregado";
 	}
 
+
 	public static function cantMakeModuleConfig( $module , $configuration )
 	{
 		return "ERRO: Erro ao fazer configuração '$configuration' requerida pelo modulo '$module'";
@@ -235,5 +236,17 @@ class Strings {
 	{
 		return "ERRO: Não foi possivel deletar o arquivo da migration $fileName";
 	}
+
+
+
+    /**
+     * Retorna mensagem perguntando qual dos modulos o usuário deseja carregar para esse tipo de módulo
+     *
+     * @param string $moduleType
+     * @return string
+     */
+    public static function moduleNameForThisType($moduleType){
+        return "Qual o nome do modulo do tipo \"".$moduleType."\" deseja carregar?";
+    }
 
 }

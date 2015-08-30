@@ -66,16 +66,16 @@ class LoadModule extends Command
 		//Verifica se foram passados os comandos inline
 		if(is_null($moduleType) && is_null($moduleName)){
 			//pede o tipo do modulo
-			$moduleType = $this->ask('Qual tipo de modulo deseja carregar?');
+			$moduleType = $this->ask(Strings::MODULE_TYPE);
 			//pede o nome do modulo
-			$moduleName = $this->ask("Qual o nome do modulo do tipo \"".$moduleType."\" deseja carregar?");
+			$moduleName = $this->ask(Strings::moduleNameForThisType($moduleType));
 		}
 
 		//Cria table de verificação das migrations
 		$success = ModulesHelper::createMigrationsCheckTable($this);
 
 		//Modulos ja carregados
-		$oldLoadedModules = Configs::getConfig(PathHelper::getModuleGeneralConfig(), "modulosCarregados");
+		$oldLoadedModules = Configs::getConfig(PathHelper::getModuleGeneralConfig(), Strings::CONFIG_LOADED_MODULES);
 
 		//Inicializa variavel de array dos modulos carregados
 		$explodedLoadedModules = null;
