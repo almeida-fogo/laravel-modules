@@ -9,13 +9,40 @@
 namespace AlmeidaFogo\LaravelModules\LaravelModules;
 
 
-use Hamcrest\Text\StringStartsWith;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Mockery\Exception;
-use Psy\Util\Str;
 
 class ModulesHelper {
+
+	/**
+	 * Metodo de atalho para execução padronizada dos metodos dessa classse
+	 *
+	 * @param bool $startCondition
+	 * @param callable $helperMethod
+	 * @param callable $afterCallBack
+	 * @param Command $command
+	 * @param string $message
+	 */
+	public static function executeHelperMethod(
+		$startCondition = true,
+		Callable $helperMethod,
+		Callable $afterCallBack = null,
+		Command $command = null,
+		$message = null
+	){
+		if ($startCondition && $helperMethod != null){
+			if ($command != null && $message != null){
+				$command->info($message);
+			}
+
+			$result = $helperMethod();
+
+			if ($afterCallBack != null){
+				$afterCallBack($result);
+			}
+		}
+	}
 
 	/**
 	 * Quebra todos os modulos carregados em tipos carregados

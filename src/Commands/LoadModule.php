@@ -16,6 +16,9 @@ use AlmeidaFogo\LaravelModules\LaravelModules\Strings;
 
 class LoadModule extends Command
 {
+
+	public static $errors;
+
     /**
      * The name and signature of the console command.
      *
@@ -47,6 +50,8 @@ class LoadModule extends Command
      */
     public function handle()
     {
+		//saved instace of this
+		$that = $this;
 
 		//Tipo do modulo
 		$moduleType = $this->argument("type");
@@ -55,7 +60,7 @@ class LoadModule extends Command
 		$moduleName = $this->argument("name");
 
 		//Inicializa variavel erros
-		$errors = [];
+		LoadModule::$errors = [];
 
 		//Prepara variavel de rollback caso aja erro
 		$rollback = [];
@@ -83,172 +88,122 @@ class LoadModule extends Command
         //Pega modulos carredos em forma de array
         $explodedLoadedModules = ModulesHelper::getLoadedModules($oldLoadedModules, $moduleType , $moduleName );
 
-        //Cria table de verificação das migrations
-        $errors = ModulesHelper::createMigrationsCheckTable();
+		//Separa os tipos dos modulos carregados em um array
+		$explodedLoadedTypes = ModulesHelper::explodeTypes( $explodedLoadedModules );
 
-        //TODO: checar se o modulo ja esta carregado
+		//Cria table de verificação das migrations
+        LoadModule::$errors = ModulesHelper::createMigrationsCheckTable();
+
+        //TODO: checar se o modulo existe e se ja esta carregado
 
 		/////////////////////////////////CHECA POR CONFLITOS ENTRE OS MODULOS///////////////////////////////////////////
-		if(empty($errors)){
-			//Separa os tipos dos modulos carregados em um array
-			$explodedLoadedTypes = ModulesHelper::explodeTypes( $explodedLoadedModules );
-			//Pega configuração de conflitos do modulo
-			$conflitos = Configs::getConfig(PathHelper::getModuleConfigPath($moduleType, $moduleName) , Strings::MODULE_CONFIG_CONFLICT);
-
-			//Checa conflitos de modulos
-			$tmpErrors = ModulesHelper::checkModuleConflicts($conflitos, $explodedLoadedModules, $explodedLoadedTypes);
-
-			//Se houverem conflitos
-			if ($tmpErrors != false)
-			{
-				//Adiciona os erros para o array de erros
-				$errors = array_merge($errors, $tmpErrors);
-			}
-		}
+		ModulesHelper::executeHelperMethod(empty(LoadModule::$errors), function()use($moduleType, $moduleName, $explodedLoadedModules, $explodedLoadedTypes){
+			return ModulesHelper::checkModuleConflicts
+			(
+				Configs::getConfig(PathHelper::getModuleConfigPath($moduleType, $moduleName), Strings::MODULE_CONFIG_CONFLICT),
+				$explodedLoadedModules,
+				$explodedLoadedTypes
+			);},
+			function($result){if ($result != false){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}}
+		);
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		//////////////////////////////CHECA POR ERROS DE DEPENDENCIA ENTRE OS MODULOS///////////////////////////////////
-		if(empty($errors)){
-			//Dependencias do modulo
-			$dependencias = Configs::getConfig(PathHelper::getModuleConfigPath($moduleType, $moduleName), Strings::MODULE_CONFIG_DEPENDENCIES);
-
-			//Checa dependencias de modulos
-			$tmpErrors = ModulesHelper::checkModuleDependencies($dependencias, $explodedLoadedModules, $explodedLoadedTypes);
-
-			//Se houverem conflitos
-			if ($tmpErrors != false)
-			{
-				//Adiciona os erros para o array de erros
-				$errors = array_merge($errors, $tmpErrors);
-			}
-		}
+		ModulesHelper::executeHelperMethod(empty(LoadModule::$errors), function()use($moduleType, $moduleName, $explodedLoadedModules, $explodedLoadedTypes){
+			return ModulesHelper::checkModuleDependencies(
+		   		Configs::getConfig(PathHelper::getModuleConfigPath($moduleType, $moduleName), Strings::MODULE_CONFIG_DEPENDENCIES),
+		   		$explodedLoadedModules,
+		   		$explodedLoadedTypes
+			);},
+			function($result){if ($result != false){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}}
+		);
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		////////////////////////////////////MARCA O MODULO COMO CARREGADO///////////////////////////////////////////////
-		if(empty($errors))
-		{
-			//Retorna status
-			$this->comment(Strings::STATUS_SETING_AS_LOADED);
-
-			//Checa dependencias de modulos
-			$tmpErrors = ModulesHelper::setModuleAsLoaded($explodedLoadedModules, $moduleType, $moduleName, $rollback);
-
-			//Se houverem conflitos
-			if ($tmpErrors != true)
-			{
-				//Adiciona os erros para o array de erros
-				$errors = array_merge($errors, $tmpErrors);
-			}
-		}
+		ModulesHelper::executeHelperMethod(empty(LoadModule::$errors), function()use($explodedLoadedModules, $moduleType, $moduleName, $rollback){
+			return ModulesHelper::setModuleAsLoaded(
+ 			    $explodedLoadedModules, $moduleType, $moduleName, $rollback
+			);},
+			function($result){if ($result != true){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}},
+			$this, Strings::STATUS_SETING_AS_LOADED
+		);
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		//////////////////////////////APLICA AS CONFIGURAÇÕES REQUERIDAS PELO MODULO////////////////////////////////////
-		if (empty($errors)){
-			$this->comment(Strings::STATUS_SETTING_MODULE_CONFIGS);
-
-			//Faz configurações requeridas pelo modulo
-			$tmpErrors = ModulesHelper::makeModuleConfigs($moduleType, $moduleName, $rollback);
-
-			//Se existir algum problema
-			if ($tmpErrors != true)
-			{
-				//Adiciona os erros para o array de erros
-				$errors = array_merge($errors, $tmpErrors);
-			}
-		}
+		ModulesHelper::executeHelperMethod(empty(LoadModule::$errors), function()use($moduleType, $moduleName, $rollback){
+			return ModulesHelper::makeModuleConfigs
+			(
+				$moduleType, $moduleName, $rollback
+			);},
+			function($result){if ($result != true){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}},
+		    $this, Strings::STATUS_SETTING_MODULE_CONFIGS
+		);
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		//////////////////////////////////////////////ORDINARY FILE COPY////////////////////////////////////////////////
-		if (empty($errors)){
-			$this->comment(Strings::STATUS_COPYING_ORDINARY_FILES);
-
-			//Faz copia de arquivos do modulo
-			$tmpErrors = ModulesHelper::makeOrdinaryCopies($moduleType, $moduleName, $copyAll, $rollback, $this);
-
-			//Se existir algum problema
-			if ($tmpErrors != true)
-			{
-				//Adiciona os erros para o array de erros
-				$errors = array_merge($errors, $tmpErrors);
-			}
-		}
+		ModulesHelper::executeHelperMethod(empty(LoadModule::$errors), function()use($moduleType, $moduleName, $copyAll, $rollback, $that){
+			return ModulesHelper::makeOrdinaryCopies
+			(
+			    $moduleType, $moduleName, $copyAll, $rollback, $that
+			);},
+			function($result){if ($result != true){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}},
+		    $this, Strings::STATUS_COPYING_ORDINARY_FILES
+		);
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		////////////////////////////////////////////MIGRATION FILES COPY////////////////////////////////////////////////
-		if (empty($errors)){
-			$this->comment(Strings::STATUS_COPYING_MIGRATION_FILES);
-
-			//Faz copia de arquivos de migrations do modulo
-			$tmpErrors = ModulesHelper::makeMigrationsCopies($moduleType, $moduleName, $copyAll, $rollback, $this);
-
-			//Se existir algum problema
-			if ($tmpErrors != true)
-			{
-				//Adiciona os erros para o array de erros
-				$errors = array_merge($errors, $tmpErrors);
-			}
-		}
+		ModulesHelper::executeHelperMethod(empty(LoadModule::$errors), function()use($moduleType, $moduleName, $copyAll, $rollback, $that){
+			return ModulesHelper::makeMigrationsCopies
+			(
+				$moduleType, $moduleName, $copyAll, $rollback, $that
+			);},
+			function($result){if ($result != true){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}},
+			    $this, Strings::STATUS_COPYING_MIGRATION_FILES
+		);
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		////////////////////////////////////////////////ROUTE_BUILDER///////////////////////////////////////////////////
-		if (empty($errors)){
-			$this->comment(Strings::STATUS_BUILDING_ROUTES);
-
-			//Gera arquivo de rotas
-			$tmpErrors = ModulesHelper::buildRoutes($moduleType, $moduleName, $rollback);
-
-			//Se existir algum problema
-			if ($tmpErrors != true)
-			{
-				//Adiciona os erros para o array de erros
-				$errors = array_merge($errors, $tmpErrors);
-			}
-		}
+		ModulesHelper::executeHelperMethod(empty(LoadModule::$errors), function()use($moduleType,$moduleName, $rollback){
+			return ModulesHelper::buildRoutes
+			(
+				$moduleType, $moduleName, $rollback
+			);},
+			function($result){if ($result != true){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}},
+		    $this, Strings::STATUS_BUILDING_ROUTES
+		);
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		////////////////////////////////////////////////RUN MODULE MIGRATIONS///////////////////////////////////////////
-		if (empty($errors)){
-			$this->comment(Strings::STATUS_RUNING_MIGRATIONS);
-
-			//Roda os arquivos de migrations
-			$tmpErrors = ModulesHelper::runMigrations($moduleType, $moduleName, $rollback, $this);
-
-			//Se existir algum problema
-			if ($tmpErrors != true)
-			{
-				//Adiciona os erros para o array de erros
-				$errors = array_merge($errors, $tmpErrors);
-			}
-		}
+		ModulesHelper::executeHelperMethod(empty(LoadModule::$errors), function()use($moduleType, $moduleName, $rollback, $that){
+			return ModulesHelper::runMigrations
+			(
+			   	$moduleType, $moduleName, $rollback, $that
+			);},
+			function($result){if ($result != true){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}},
+		   	$this, Strings::STATUS_RUNING_MIGRATIONS
+		);
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		////////////////////////////////////////////////GENERATE ROLLBACK FILE//////////////////////////////////////////
-		if (empty($errors)){
-			$this->comment(Strings::STATUS_GEN_ROLLBACK);
-
-			//Gera arquivo de rollback
-			$tmpErrors = ModulesHelper::createRollbackFile($moduleType, $moduleName, $rollback);
-
-			//Se existir algum problema
-			if ($tmpErrors != true)
-			{
-				//Adiciona os erros para o array de erros
-				$errors = array_merge($errors, $tmpErrors);
-			}
-		}
+		ModulesHelper::executeHelperMethod(empty(LoadModule::$errors), function()use($moduleType, $moduleName, $rollback){
+			return ModulesHelper::createRollbackFile
+			(
+			   	$moduleType, $moduleName, $rollback
+			);},
+			function($result){if ($result != true){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}},
+		    $this, Strings::STATUS_GEN_ROLLBACK
+		);
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		////////////////////////////////////////////////RESPONSE (OUTPUT)///////////////////////////////////////////////
-		if (empty($errors)){//Se os comandos rodarem com sucesso
+		if (empty(LoadModule::$errors)){//Se os comandos rodarem com sucesso
 			//Comentario comando executado com sucesso
 			$this->comment(Strings::successfulyRunModuleLoad($moduleType, $moduleName));
 		}else{//Se ocorrer erro ao rodar os comandos
-            foreach ($errors as $error) {
+            foreach (LoadModule::$errors as $error) {
                 $this->error($error);
             }
-            /////////////////////////////////////ARQUIVO DE ROLLBACK////////////////////////////////////////
 			RollbackManager::execRollback($rollback, $this);
-			////////////////////////////////////////////////////////////////////////////////////////////////
 		}
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     }
