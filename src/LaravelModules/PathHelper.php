@@ -142,4 +142,30 @@ class PathHelper{
 		return base_path().'/app/Modulos/'.$moduleType.'/'.$moduleName.'/Migrations/';
 	}
 
+	/**
+	 * @return string
+	 */
+	public static function getLaravelRoutesPath()
+	{
+		return base_path().'/app/Http/routes.php';
+	}
+
+	/**
+	 * @param string $moduleType
+	 * @param string $moduleName
+	 * @return string
+	 */
+	public static function getModuleRoutesPath($moduleType, $moduleName)
+	{
+		return base_path().'/app/Modulos/'.$moduleType.'/'.$moduleName.'/routes.php';
+	}
+
+	/**
+	 * @return string
+	 */
+	public static function getRouteBuilderPath()
+	{
+		return base_path().'/app/Modulos/RouteBuilder.php';
+	}
+
 }

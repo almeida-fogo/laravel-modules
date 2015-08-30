@@ -34,6 +34,8 @@ class Strings {
 	const ROLLBACK_MODULE_ORDINARY_FILE_COPY_TAG = "module-files";
 	const ROLLBACK_MODULE_MIGRATION_FILE_TAG = "module-migration-files";
 	const ROLLBACK_MODULE_MIGRATION_DELETED_FILE_TAG = "module-migration-deleted-files";
+	const ROLLBACK_ROUTES_BUILDER_TAG = "routes-builder";
+	const ROLLBACK_OLD_ROUTES_TAG = "old-routes";
 
 	//MIGRATIONS
 	const MIGRATIONS_WORD_SEPARATOR = "_";
@@ -43,6 +45,13 @@ class Strings {
 	const STATUS_SETTING_MODULE_CONFIGS = "INFO: Alterando configuracoes requeridas pelo modulo.";
 	const STATUS_COPYING_ORDINARY_FILES = "INFO: Copiando arquivos convencionais";
 	const STATUS_COPYING_MIGRATION_FILES = "INFO: Copiando arquivos das migrations";
+	const STATUS_BUILDING_ROUTES = "INFO: Constuindo rotas do modulo";
+
+	//ERRORS
+	const ERROR_ROUTES_FILE_SAVE = "ERRO: Problemas ao gerar o arquivo de rotas";
+	const ERROR_ROUTES_BUILDER_SAVE = "ERRO: Problemas ao salvar RouterBuilder";
+	const ERROR_INCLUDE_TO_ROUTES_BUILDER_SAVE = "ERRO: Problemas ao incluir rotas ao RouterBuilder";
+	const ERROR_ROUTES_BUILDER_GEN = "ERRO: Problemas ao gerar RoutesBuilder Array";
 
 	//ANSWERS
 	const SHORT_YES = 'y';

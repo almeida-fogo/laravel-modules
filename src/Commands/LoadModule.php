@@ -101,6 +101,8 @@ class LoadModule extends Command
 		}
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+		//TODO: checar se o modulo ja esta carregado
+
 		/////////////////////////////////CHECA POR CONFLITOS ENTRE OS MODULOS///////////////////////////////////////////
 		if($success){
 			//Separa os tipos dos modulos carregados em um array
@@ -209,58 +211,22 @@ class LoadModule extends Command
 		}
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+		////////////////////////////////////////////////ROUTE_BUILDER///////////////////////////////////////////////////
+		if ($success){
+			$this->comment(Strings::STATUS_BUILDING_ROUTES);
 
-							/////////////////////////////////////ROUTES/////////////////////////////////////////////////////
-							if ($success){
-								//Printa que esta lidando com o arquivo de rotas
-								$this->comment("INFO: Copia rotas.");
+			//Gera arquivo de rotas
+			$tmpErrors = ModulesHelper::buildRoutes($moduleType, $moduleName, $rollback);
 
-								//diretorio para o arquivo de rotas gerais
-								$universalRoutesPath = base_path().'/app/Http/routes.php';
-								//diretorio para o arquivo de rotas do modulo
-								$routesPath = base_path().'/app/Modulos/'.$moduleType.'/'.$moduleName.'/routes.php';
-								//diretorio parao arquivo de rotas do projeto
-								$routesBuilderPath = base_path().'/app/Modulos/RouteBuilder.php';
-
-								//Cria registro no rollback dizendo que o arquivo foi copiado
-								$rollback["routes-builder"] = htmlentities(file_get_contents($routesBuilderPath), ENT_QUOTES, "UTF-8");
-
-								//constroi o array do routesBuilder
-								$routeBuilder = RouteBuilder::getRoutesBuilder($routesBuilderPath);
-								//verifica se foi construido um array valido
-								if ($routeBuilder !== false){
-									//inclui as novas rotas ao array do routeBuilder
-									$routeBuilder = RouteBuilder::includeToRoutesBuilder($routeBuilder, $routesPath);
-									//verifica se o array de rotas continua válido
-									if ($routeBuilder !== false){
-										//tenta salvar o novo array do routesBuilder
-										if (RouteBuilder::saveRoutesBuilder($routeBuilder, $routesBuilderPath) != false){
-											//Cria registro no rollback dizendo que o arquivo foi copiado
-											$rollback["old-routes"] = htmlentities(file_get_contents($universalRoutesPath), ENT_QUOTES, "UTF-8");
-											//tenta construir o arquivo de rotas gera baseado no array savo do routesBuilder
-											if (RouteBuilder::buildRoutes($routeBuilder) === false){
-												//Erro se n foi possivel gerar o novo arquivo de rotas
-												$this->comment("ERRO: Problemas ao gerar o arquivo de rotas.");
-												//seta flag de erro para true
-												$success = false;
-											}
-										}else{
-											$this->comment("ERRO: Problemas ao salvar RouterBuilder.");
-											//seta flag de erro para true
-											$success = false;
-										}
-									}else{
-										$this->comment("ERRO: Problemas ao incluir rotas ao RouterBuilder.");
-										//seta flag de erro para true
-										$success = false;
-									}
-								}else{
-									$this->comment("ERRO: Problemas ao gerar RoutesBuilder Array.");
-									//seta flag de erro para true
-									$success = false;
-								}
-							}
-							////////////////////////////////////////////////////////////////////////////////////////////////
+			//Se existir algum problema
+			if ($tmpErrors != true)
+			{
+				//Adiciona os erros para o array de erros
+				$errors = array_merge($errors, $tmpErrors);
+				$success = false;
+			}
+		}
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 							/////////////////////////////////////MIGRATIONS/////////////////////////////////////////////////
 							//Talvez tenhamos problemas com os timestamps das migrations

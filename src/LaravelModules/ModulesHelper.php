@@ -444,9 +444,9 @@ QUERY
 						}
 
 						//Captura o numero da migration
-						$migrationCounter = Configs::getConfig(PathHelper::getLaravelMigrationsPath(), Strings::CONFIG_MIGRATIONS_COUNTER);
+						$migrationCounter = Configs::getConfig(PathHelper::getModuleGeneralConfig(), Strings::CONFIG_MIGRATIONS_COUNTER);
 						//Atualiza o contador de migrations
-						Configs::setConfig(PathHelper::getLaravelMigrationsPath(), Strings::CONFIG_MIGRATIONS_COUNTER, $migrationCounter+1);
+						Configs::setConfig(PathHelper::getModuleGeneralConfig(), Strings::CONFIG_MIGRATIONS_COUNTER, $migrationCounter+1);
 
 						//Sinaliza o no arquivo copiado
 						$rollback[Strings::ROLLBACK_MODULE_MIGRATION_FILE_TAG][] = EscapeHelper::encode(
@@ -455,7 +455,7 @@ QUERY
 
 						//Faz backup do arquivo que será substituido
 						$rollback[Strings::ROLLBACK_MODULE_MIGRATION_DELETED_FILE_TAG][EscapeHelper::encode(PathHelper::getLaravelMigrationsPath().$migrationFiles[$migrationPos])] = EscapeHelper::encode(
-							file_get_contents(PathHelper::getModuleMigrationsPath($moduleType, $moduleName).$migrationFiles[$migrationPos])
+							file_get_contents(PathHelper::getLaravelMigrationsPath().$migrationFiles[$migrationPos])
 						);
 
 						//Deletar o arquivo antigo
@@ -481,4 +481,48 @@ QUERY
 
 		return !empty($errors) ? $errors : true;
 	}
+
+	/**
+	 * Constroi as rotas dos modulos
+	 *
+	 * @param string $moduleType
+	 * @param string $moduleName
+	 * @param array $rollback
+	 * @return array|bool
+	 */
+	public static function buildRoutes($moduleType, $moduleName, array &$rollback){
+		$errors = [ ];
+
+		//Cria registro no rollback dizendo que o arquivo foi copiado
+		$rollback[Strings::ROLLBACK_ROUTES_BUILDER_TAG] = EscapeHelper::encode(file_get_contents(PathHelper::getRouteBuilderPath()));
+
+		//constroi o array do routesBuilder
+		$routeBuilder = RouteBuilder::getRoutesBuilder(PathHelper::getRouteBuilderPath());
+		//verifica se foi construido um array valido
+		if ($routeBuilder !== false){
+			//inclui as novas rotas ao array do routeBuilder
+			$routeBuilder = RouteBuilder::includeToRoutesBuilder($routeBuilder, PathHelper::getModuleRoutesPath($moduleType, $moduleName));
+			//verifica se o array de rotas continua válido
+			if ($routeBuilder !== false){
+				//tenta salvar o novo array do routesBuilder
+				if (RouteBuilder::saveRoutesBuilder($routeBuilder,PathHelper::getRouteBuilderPath()) != false){
+					//Cria registro no rollback dizendo que o arquivo foi copiado
+					$rollback[Strings::ROLLBACK_OLD_ROUTES_TAG] = EscapeHelper::encode(file_get_contents(PathHelper::getLaravelRoutesPath()));
+					//tenta construir o arquivo de rotas gera baseado no array savo do routesBuilder
+					if (RouteBuilder::buildRoutes($routeBuilder) === false){
+						$errors[] = Strings::ERROR_ROUTES_FILE_SAVE;
+					}
+				}else{
+					$errors[] = Strings::ERROR_ROUTES_BUILDER_SAVE;
+				}
+			}else{
+				$errors[] = Strings::ERROR_INCLUDE_TO_ROUTES_BUILDER_SAVE;
+			}
+		}else{
+			$errors[] = Strings::ERROR_ROUTES_BUILDER_GEN;
+		}
+
+		return !empty($errors) ? $errors : true;
+	}
+
 }
