@@ -104,7 +104,7 @@ class LoadModule extends Command
 				$explodedLoadedModules,
 				$explodedLoadedTypes
 			);},
-			function($result){if ($result != false){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}}
+			function($result){if ($result !== false){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}}
 		);
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -115,7 +115,7 @@ class LoadModule extends Command
 		   		$explodedLoadedModules,
 		   		$explodedLoadedTypes
 			);},
-			function($result){if ($result != false){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}}
+			function($result){if ($result !== false){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}}
 		);
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -124,7 +124,7 @@ class LoadModule extends Command
 			return ModulesHelper::setModuleAsLoaded(
  			    $explodedLoadedModules, $moduleType, $moduleName, $rollback
 			);},
-			function($result){if ($result != true){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}},
+			function($result){if ($result !== true){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}},
 			$this, Strings::STATUS_SETING_AS_LOADED
 		);
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -135,7 +135,7 @@ class LoadModule extends Command
 			(
 				$moduleType, $moduleName, $rollback
 			);},
-			function($result){if ($result != true){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}},
+			function($result){if ($result !== true){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}},
 		    $this, Strings::STATUS_SETTING_MODULE_CONFIGS
 		);
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -146,7 +146,7 @@ class LoadModule extends Command
 			(
 			    $moduleType, $moduleName, $copyAll, $rollback, $that
 			);},
-			function($result){if ($result != true){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}},
+			function($result){if ($result !== true){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}},
 		    $this, Strings::STATUS_COPYING_ORDINARY_FILES
 		);
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -157,7 +157,7 @@ class LoadModule extends Command
 			(
 				$moduleType, $moduleName, $copyAll, $rollback, $that
 			);},
-			function($result){if ($result != true){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}},
+			function($result){if ($result !== true){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}},
 			    $this, Strings::STATUS_COPYING_MIGRATION_FILES
 		);
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -168,7 +168,7 @@ class LoadModule extends Command
 			(
 				$moduleType, $moduleName, $rollback
 			);},
-			function($result){if ($result != true){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}},
+			function($result){if ($result !== true){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}},
 		    $this, Strings::STATUS_BUILDING_ROUTES
 		);
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -179,7 +179,7 @@ class LoadModule extends Command
 			(
 			   	$moduleType, $moduleName, $rollback, $that
 			);},
-			function($result){if ($result != true){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}},
+			function($result){if ($result !== true){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}},
 		   	$this, Strings::STATUS_RUNING_MIGRATIONS
 		);
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -190,7 +190,7 @@ class LoadModule extends Command
 			(
 			   	$moduleType, $moduleName, $rollback
 			);},
-			function($result){if ($result != true){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}},
+			function($result){if ($result !== true){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}},
 		    $this, Strings::STATUS_GEN_ROLLBACK
 		);
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////

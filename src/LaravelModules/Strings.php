@@ -16,6 +16,7 @@ class Strings {
     //COMMANDS
     const COMMAND_DUMP_AUTOLOAD = "composer dump-autoload";
     const COMMAND_MIGRATE = "migrate";
+    const COMMAND_ROLLBACK = "migrate:rollback";
 
     //ASK
     const MODULE_TYPE = 'Qual tipo de modulo deseja carregar';
@@ -57,6 +58,10 @@ class Strings {
 	const STATUS_BUILDING_ROUTES = "INFO: Constuindo rotas do modulo";
     const STATUS_RUNING_MIGRATIONS = "INFO: Rodando migrations do modulo";
     const STATUS_GEN_ROLLBACK = "INFO: Constroi Arquivo de Rollback";
+	const STATUS_READING_ROLLBACK_FILE = "INFO: Lendo o arquivo de Rollback";
+	const STATUS_IF_MIGRATIONS_CONTROLL_DB_EXISTS = "INFO: Verificando Se o BD de Migrations Existe";
+    const STATUS_RUNNING_MIGRATE_ROLLBACK = "INFO: Rollback das Migrations";
+    const STATUS_RUNNING_ROUTEBUILDER_ROLLBACK = "INFO: Executando RouteBuilder Rollback";
 
 	//ERRORS
 	const ERROR_ROUTES_FILE_SAVE = "ERRO: Problemas ao gerar o arquivo de rotas";
@@ -67,6 +72,12 @@ class Strings {
     const ERROR_MIGRATE = "ERRO: Erro ao Rodar Migration";
     const ERROR_CREATE_ROLLBACK_FILE = "ERRO: Nao foi possivel criar um arquivo de rollback";
     const ERROR_CREATE_MIGRATION_CHECK_TABLE = "ERRO: Erro ao Criar Table de Modulos Carregados";
+	const ERROR_CANT_CONVERT_ARRAY_TO_ROLLBACK_FILE = "ERRO: Nao Foi Possivel Ler o Arquivo de Rollback";
+    const ERROR_MIGRATIONS_CONTROLL_DB_DOESNT_EXISTS = "ERRO: Arquivo de Controle de Migrations nao Existe";
+    const ERROR_DATABASE_CONECTION = "ERRO: Erro de conexao com o banco de dados";
+    const ERROR_MIGRATE_ROLLBACK = "ERRO: Erro ao Rodar Rollback das Migrations";
+    const ERROR_GET_MODULE_NAME_FROM_DB = "ERRO: Erro ao Capturar Nome do Modulo";
+    const ERROR_WRITE_ROUTEBUILDER_FILE = "ERRO: Erro ao Escrever Arquivo de RouteBuilder";
 
 	//ANSWERS
 	const SHORT_YES = 'y';
