@@ -13,7 +13,7 @@ class Configs{
 	 */
 	public static function getConfig($configPath, $index = null){
 		//Roda o arquivo de configuração
-		$value = eval(str_replace("<?php", "", file_get_contents($configPath)));
+		$value = eval(str_replace("<?php", "", file_get_contents($configPath))); //TODO: Adicionar ao arquivo de strings
 		if (is_array($value)){
 			//verifica se o indice do array de configurações é nulo
 			if ($index != null)
@@ -44,7 +44,7 @@ class Configs{
 	 */
 	public static function setConfig($path, $config, $value){
 		//verifica se os parametros são validos
-		if ($config != '\'\'' && $path != base_path().'/'.'.php'){
+		if ($config != '\'\'' && $path != base_path().'/'.'.php'){ //TODO: Adicionar ao arquivo de strings
 			//verifica se o arquvido onde estão as configs existe
 			if (file_exists($path)){
 				//pega no arquivo a posição onde esta a configuração que deve ser alterada
@@ -52,7 +52,7 @@ class Configs{
 				//verifica se a configuração existe no arquivo
 				if ($configPos != false){
 					// pega a posição do operador seta (=>) apos a cofiguração
-					$arrowPos = strpos(file_get_contents($path), '=>', $configPos)+2;
+					$arrowPos = strpos(file_get_contents($path), '=>', $configPos)+2; //TODO: Adicionar ao arquivo de strings
 					//verifica se o operador seta apos a confiração existe
 					if ($arrowPos != false){
 						//captura a posição da proxima virgula apos o operador seta
@@ -85,7 +85,7 @@ class Configs{
 	 * @param mixed $value
 	 * @return bool|int
 	 */
-	public static function setLaravelConfig($config, $value){
+	public static function setLaravelConfig($config, $value){ //TODO: Refatorar para arquivo de strings
 		$path = explode('.',$config);
 		if ($path != array()){
 			$variable = "'".array_pop($path)."'";

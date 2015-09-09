@@ -62,6 +62,10 @@ class Strings {
 	const STATUS_IF_MIGRATIONS_CONTROLL_DB_EXISTS = "INFO: Verificando Se o BD de Migrations Existe";
     const STATUS_RUNNING_MIGRATE_ROLLBACK = "INFO: Rollback das Migrations";
     const STATUS_RUNNING_ROUTEBUILDER_ROLLBACK = "INFO: Executando RouteBuilder Rollback";
+	const STATUS_RUNNING_ROUTES_ROLLBACK = "INFO: Executando Routes Rollback";
+	const STATUS_RUNNING_MIGRATION_FILES_ROLLBACK = "INFO: Rollback dos Arquivos de Migration";
+	const STATUS_RUNNING_MIGRATION_COUNTER_ROLLBACK = "INFO: Rollback do Contador de Migrations";
+	const STATUS_RUNNING_MIGRATION_OLD_FILES_ROLLBACK = "INFO: Rollback dos Arquivos de Migration Removidos";
 
 	//ERRORS
 	const ERROR_ROUTES_FILE_SAVE = "ERRO: Problemas ao gerar o arquivo de rotas";
@@ -78,6 +82,11 @@ class Strings {
     const ERROR_MIGRATE_ROLLBACK = "ERRO: Erro ao Rodar Rollback das Migrations";
     const ERROR_GET_MODULE_NAME_FROM_DB = "ERRO: Erro ao Capturar Nome do Modulo";
     const ERROR_WRITE_ROUTEBUILDER_FILE = "ERRO: Erro ao Escrever Arquivo de RouteBuilder";
+	const ERROR_WRITE_ROUTES_FILE = "ERRO: Erro ao Escrever Arquivo de Rotas";
+	const ERROR_REMOVING_MIGRATION_FILES = "ERRO: Problemas ao Deletar Arquivos de Migration";
+	const ERROR_REDEFINING_MIGRATIONS_COUNTER = "ERRO: Problemas ao Definir Configuracao do Contador de Migrations";
+	const ERROR_GETTING_MIGRATIONS_COUNTER_CONFIG = "ERRO: Problemas ao Capturar Configuracao do Contador de Migrations";
+	const ERROR_ROLLBACK_OLD_MIGRATION_FILES = "ERRO: Erro ao Restaurar Arquivos de Migration Anteriores";
 
 	//ANSWERS
 	const SHORT_YES = 'y';
@@ -91,6 +100,7 @@ class Strings {
 	const PHP_EXTENSION = '.php';
 	const GIT_KEEP_FILE_NAME = '.gitkeep';
     const TRUE_STRING = "true";
+	const WRITE_FILE_TAG = 'w';
 
 	/**
 	 * Retorna mensagem de conflito entre modulos

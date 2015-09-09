@@ -57,7 +57,7 @@ class ModulesHelper {
 		foreach ( $loadedModules as $module)
 		{
 			//Pega o tipo do modulo
-			$type = explode(".", $module)[0];
+			$type = explode(".", $module)[0]; //TODO: Adicionar ao arquivo de strings
 			//Verifica se o tipo ja foi colocado na lista
 			if (!in_array($type, $types)){
 				//Adiciona a lista
@@ -76,14 +76,13 @@ class ModulesHelper {
 		try{
 			$errors = [];
 
-			if (!(count(DB::select(DB::raw("SHOW TABLES LIKE '".Strings::TABLE_PROJECT_MODULES."';")))>0)){
-				DB::select( DB::raw("
-										CREATE TABLE ".Strings::TABLE_PROJECT_MODULES."
-					(
-						id			int NOT NULL PRIMARY KEY AUTO_INCREMENT,
-						".Strings::TABLE_PROJECT_MODULES_NAME."	VARCHAR (255) UNIQUE NOT NULL
-					)
-					"
+			if (!(count(DB::select(DB::raw("SHOW TABLES LIKE '".Strings::TABLE_PROJECT_MODULES."';")))>0)){ //TODO: Refatorar para usar statemet
+				DB::select( DB::raw("											        					".
+									"CREATE TABLE ".Strings::TABLE_PROJECT_MODULES."    					".
+									"(											        					".
+									"id			int NOT NULL PRIMARY KEY AUTO_INCREMENT,					".
+									Strings::TABLE_PROJECT_MODULES_NAME."	VARCHAR (255) UNIQUE NOT NULL	".
+									")																		"
 				));
 				if(!(count( DB::select( DB::raw("SHOW TABLES LIKE '".Strings::TABLE_PROJECT_MODULES."';")))>0)){
 					$errors[] = Strings::ERROR_CREATE_MIGRATION_CHECK_TABLE;
@@ -189,7 +188,7 @@ class ModulesHelper {
 			if ( !empty( $dependencia ) )
 			{
 				//Dependencia quebrada em tipo e nome
-				$dependenciaBroken = explode( '.' , $dependencia );
+				$dependenciaBroken = explode( '.' , $dependencia ); //TODO: Adicionar ao arquivo de strings
 				//Tipo da dependencia
 				$dependenciaType = $dependenciaBroken[ 0 ];
 				//Verifica se é uma dependencia especifica
@@ -267,7 +266,7 @@ class ModulesHelper {
 		$configuracoes = Configs::getConfig( PathHelper::getModuleConfigPath($moduleType, $moduleName) , "configuracoes" );
 
 		//Inicia o Rollback de arquivos configurados
-		$rollback["module-configs"] = [];
+		$rollback["module-configs"] = []; //TODO: Adicionar ao arquivo de strings
 
 		foreach ( $configuracoes as $configuracao => $valor )
 		{
@@ -290,7 +289,7 @@ class ModulesHelper {
 				if ( Configs::setLaravelConfig( $configuracao , $valor ) == false )
 				{
 					//Adiciona o erro para o array de erros
-					$errors[ ] = Strings::cantMakeModuleConfig($moduleType.'.'.$moduleName, $configuracao);
+					$errors[ ] = Strings::cantMakeModuleConfig($moduleType.'.'.$moduleName, $configuracao); //TODO: Adicionar ao arquivo de strings
 				}
 			}
 		}
@@ -321,9 +320,9 @@ class ModulesHelper {
 			PathHelper::getModuleModelsPath($moduleType, $moduleName) => PathHelper::getLaravelModelsPath(),
 			PathHelper::getModuleViewsPath($moduleType, $moduleName) => PathHelper::getLaravelViewsPath($moduleType, $moduleName),
 			PathHelper::getModulePublicPath($moduleType, $moduleName) => PathHelper::getLaravelPublicPath($moduleType, $moduleName),
-			PathHelper::getModulePublicPath($moduleType, $moduleName, '/css') => PathHelper::getLaravelPublicPath($moduleType, $moduleName, '/css'),
-			PathHelper::getModulePublicPath($moduleType, $moduleName, '/imagens') => PathHelper::getLaravelPublicPath($moduleType, $moduleName, '/imagens'),
-			PathHelper::getModulePublicPath($moduleType, $moduleName, '/js') => PathHelper::getLaravelPublicPath($moduleType, $moduleName, '/js'),
+			PathHelper::getModulePublicPath($moduleType, $moduleName, '/css') => PathHelper::getLaravelPublicPath($moduleType, $moduleName, '/css'), 			//TODO: Remover ao adicionar copia recurssiva
+			PathHelper::getModulePublicPath($moduleType, $moduleName, '/imagens') => PathHelper::getLaravelPublicPath($moduleType, $moduleName, '/imagens'),	//TODO: Remover ao adicionar copia recurssiva
+			PathHelper::getModulePublicPath($moduleType, $moduleName, '/js') => PathHelper::getLaravelPublicPath($moduleType, $moduleName, '/js'),				//TODO: Remover ao adicionar copia recurssiva
 		];
 
 		//loop em todos os diretorios de destino

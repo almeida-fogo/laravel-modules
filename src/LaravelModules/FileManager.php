@@ -20,7 +20,7 @@ class FileManager{
 		}
 
 		foreach (scandir($dir) as $item) {
-			if ($item == '.' || $item == '..') {
+			if ($item == '.' || $item == '..') { //TODO: Adicionar ao arquivo de strings
 				continue;
 			}
 

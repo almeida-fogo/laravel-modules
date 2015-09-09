@@ -60,9 +60,8 @@ class RollbackManager {
     }
 
     /**
-     * Transforma um arquivo de Rollback para um array de Rollback caso seja necessário
+     * Verifica se a migration do modulo existe na table de modulos carregados
      *
-     * @param array $rollback
      * @return array|bool
      */
     private static function verifyIfMigrationsControllDbExists(){
@@ -109,7 +108,67 @@ class RollbackManager {
         return !empty($errors) ? $errors : true;
     }
 
-    /**
+	/**
+	 * Executa rollback das rotas do modulo
+	 *
+	 * @param array $rollback
+	 * @return array|bool
+	 */
+	private static function runRoutesRollback(array $rollback){
+		$errors = [ ];
+
+		if (array_key_exists(Strings::ROLLBACK_OLD_ROUTES_TAG, $rollback)) {
+			if (file_put_contents(PathHelper::getLaravelRoutesPath(),
+				str_replace(file_get_contents(PathHelper::getLaravelRoutesPath()),
+				EscapeHelper::decode($rollback[Strings::ROLLBACK_OLD_ROUTES_TAG]),
+				file_get_contents(PathHelper::getLaravelRoutesPath())))
+				== false
+			) {
+				$errors[ ] = Strings::ERROR_WRITE_ROUTES_FILE;
+			}
+		}
+
+		return !empty($errors) ? $errors : true;
+	}
+
+	/**
+	 * Executa rollback dos arquivos de migration do modulo
+	 *
+	 * @param array $rollback
+	 * @param int $counterMigrationFilesDeleted
+	 * @return array|bool
+	 */
+	private static function runMigrationFilesRollback(array $rollback, &$counterMigrationFilesDeleted)
+	{
+		$errors = [ ];
+
+		if ( array_key_exists( Strings::ROLLBACK_MODULE_MIGRATION_FILE_TAG , $rollback ) )
+		{
+			$counterMigrationFilesDeleted = 0;
+
+			foreach ( $rollback[ Strings::ROLLBACK_MODULE_MIGRATION_FILE_TAG ] as $value )
+			{
+				$explodePath = explode( Strings::PATH_SEPARATOR , $value );
+				if ( strtoupper( $explodePath[ count( $explodePath ) - 1 ] ) != strtoupper(Strings::GIT_KEEP_FILE_NAME) )
+				{
+					if ( unlink( $value ) != false )
+					{
+						$counterMigrationFilesDeleted++;
+					}
+					else
+					{
+						$errors[] = Strings::ERROR_REMOVING_MIGRATION_FILES;
+						break;
+					}
+				}
+			}
+		}
+
+		return !empty($errors) ? $errors : true;
+	}
+
+
+	/**
      * Faz o rollback do arquivo de Routebuilder
      *
      * @param array $rollback
@@ -136,7 +195,66 @@ class RollbackManager {
         return !empty($errors) ? $errors : true;
     }
 
-    /**
+	/**
+	 * Faz o rollback no contador de migrations
+	 *
+	 * @param array $rollback
+	 * @param int $counterMigrationFilesDeleted
+	 * @return array|bool
+	 */
+	private static function runMigrationCounterRollback($rollback, &$counterMigrationFilesDeleted){
+		$errors = [ ];
+
+		if (is_array($rollback) && !empty($rollback)) {
+			if (array_key_exists(Strings::ROLLBACK_MODULE_MIGRATION_FILE_TAG, $rollback))
+			{
+
+				$migrationCounterBeforeRollback = Configs::getConfig(PathHelper::getModuleGeneralConfig(), Strings::CONFIG_MIGRATIONS_COUNTER);
+				if ($migrationCounterBeforeRollback != false){
+					if (Configs::setConfig(PathHelper::getModuleGeneralConfig(), Strings::CONFIG_MIGRATIONS_COUNTER, $migrationCounterBeforeRollback - $counterMigrationFilesDeleted) == false){
+						$errors[ ] = Strings::ERROR_REDEFINING_MIGRATIONS_COUNTER;
+					}
+				}else{
+					$errors[ ] = Strings::ERROR_GETTING_MIGRATIONS_COUNTER_CONFIG;
+				}
+			}
+		}
+
+		return !empty($errors) ? $errors : true;
+	}
+
+	/**
+	 * Faz o rollback dos arquivo antigosd das migrations
+	 *
+	 * @param array $rollback
+	 * @return array|bool
+	 */
+	private static function runMigrationOldFilesRollback($rollback)
+	{
+		$errors = [ ];
+
+		if ( is_array( $rollback ) && !empty( $rollback ) )
+		{
+			if ( array_key_exists( Strings::ROLLBACK_MODULE_MIGRATION_DELETED_FILE_TAG , $rollback ) )
+			{
+				foreach ( $rollback[ Strings::ROLLBACK_MODULE_MIGRATION_DELETED_FILE_TAG ] as $path => $fileContent )
+				{
+					$migration = fopen( $path , Strings::WRITE_FILE_TAG );
+					if ( $migration == false || fwrite( $migration ,
+														EscapeHelper::decode( $fileContent ) ) == false || fclose( $migration ) == false
+					)
+					{
+						$errors[ ] = Strings::ERROR_ROLLBACK_OLD_MIGRATION_FILES;
+					}
+				}
+			}
+		}
+
+		return !empty($errors) ? $errors : true;
+	}
+
+
+/**
 	 * Escreve arquivo de rollback do modulo
 	 *
 	 * @param array $rollbackArray
@@ -202,6 +320,9 @@ class RollbackManager {
 	 */
 	public static function execRollback($rollback, Command $command)
 	{
+		self::$errors = [ ];
+
+		$counterMigrationFilesDeleted = 0;
 
 		//////////////////////////////////////////////TRANSFORM ROLLBACK FILE TO ARRAY//////////////////////////////////
 		self::executeRollbackMethod(empty(self::$errors), function()use($rollback){
@@ -247,75 +368,51 @@ class RollbackManager {
         );
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+		//////////////////////////////////////////////ROLLBACK DO ARQUIVO DE ROTAS//////////////////////////////////////
+		self::executeRollbackMethod(empty(self::$errors) && is_array($rollback) && !empty($rollback), function() use ($rollback){
+			return self::runRoutesRollback
+			(
+				$rollback
+			);},
+			function($result){if ($result !== true){self::$errors = array_merge( self::$errors , $result );}},
+			$command, Strings::STATUS_RUNNING_ROUTES_ROLLBACK
+		);
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-		if (is_array($rollback) && !empty($rollback)) {
+		///////////////////////////////////////////ROLLBACK DOS ARQUIVOS DE MIGRATION///////////////////////////////////
+		self::executeRollbackMethod(empty(self::$errors) && is_array($rollback) && !empty($rollback), function() use ($rollback, $counterMigrationFilesDeleted){
+			return self::runMigrationFilesRollback
+			(
+				$rollback,
+				$counterMigrationFilesDeleted
+			);},
+			function($result){if ($result !== true){self::$errors = array_merge( self::$errors , $result );}},
+			$command, Strings::STATUS_RUNNING_MIGRATION_FILES_ROLLBACK
+		);
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+		///////////////////////////////////////////ROLLBACK DOS ARQUIVOS DE MIGRATION///////////////////////////////////
+		self::executeRollbackMethod(empty(self::$errors) && is_array($rollback) && !empty($rollback), function() use ($rollback, $counterMigrationFilesDeleted){
+			return self::runMigrationCounterRollback
+			(
+				$rollback,
+				$counterMigrationFilesDeleted
+			);},
+			function($result){if ($result !== true){self::$errors = array_merge( self::$errors , $result );}},
+			$command, Strings::STATUS_RUNNING_MIGRATION_COUNTER_ROLLBACK
+		);
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-			if (array_key_exists("old-routes", $rollback)) {
-				$command->info("INFO: Rollback das Routes.");
-				$command->info("INFO: Executando Routes Rollback.");
-				//diretorio para o arquivo de rotas do modulo
-				$routesPath = base_path().'/app/Http/routes.php';
-				$oldRoutesBuilder = html_entity_decode($rollback["old-routes"], ENT_QUOTES, "UTF-8");
-				$command->info("INFO: Escrevendo Arquivo de Rotas.");
-				if (file_put_contents($routesPath,
-									  str_replace(file_get_contents($routesPath),
-												  $oldRoutesBuilder,
-												  file_get_contents($routesPath)))
-					== false
-				) {
-					$command->info("ERRO: Erro ao Escrever Arquivo de Rotas.");
-					$success = false;
-				}
-			}
-
-			if (array_key_exists("module-migration-files", $rollback)) {
-				$command->info("INFO: Rollback dos Arquivos de Migration.");
-				$counterFilesDeleted = 0;
-
-				$command->info("INFO: Deletando Migrations Copiadas.");
-				foreach($rollback["module-migration-files"] as $value){
-					$explodePath = explode("/", $value);
-					if(strtoupper($explodePath[count($explodePath)-1]) != strtoupper(".gitkeep")) {
-						if (unlink($value) != false) {
-							$counterFilesDeleted++;
-						} else {
-							$command->info("ERRO: Problemas ao Deletar Arquivos de Migration.");
-							$success = false;
-							break;
-						}
-					}
-				}
-				$command->info("INFO: Capturando Contador de Migrations.");
-				$migrationCounterBeforeRollback = Configs::getConfig(base_path()."/app/Modulos/configs.php", "migrationsCounter");
-				if ($migrationCounterBeforeRollback != false){
-					$command->info("INFO: Rollback do Contador de Migrations.");
-					if (Configs::setConfig(base_path()."/app/Modulos/configs.php", "migrationsCounter", $migrationCounterBeforeRollback - $counterFilesDeleted) == false){
-						$command->info("ERRO: Problemas ao Definir Configuracao do Contador de Migrations.");
-						$success = false;
-					}
-				}else{
-					$command->info("ERRO: Problemas ao Capturar Configuracao do Contador de Migrations.");
-					$success = false;
-				}
-
-				$command->info("INFO: Rollback dos Arquivos de Migration Removidos.");
-				if (array_key_exists("module-migration-deleted-files", $rollback)) {
-					$command->info("INFO: Restaurando Arquivos de Migration Deletados.");
-					foreach($rollback["module-migration-deleted-files"] as $path=>$fileContent){
-						$migration = fopen($path, "w");
-						if ($migration == false ||
-							fwrite($migration, html_entity_decode($fileContent, ENT_QUOTES, "UTF-8")) == false ||
-							fclose($migration) == false){
-							$command->info("ERRO: Erro ao Restaurar Arquivos de Migration Anteriores.");
-							$success = false;
-							break;
-						}
-					}
-				}
-			}
-		}
+		/////////////////////////////////////ROLLBACK DOS ARQUIVOS ANTIGOS DE MIGRATION/////////////////////////////////
+		self::executeRollbackMethod(empty(self::$errors) && is_array($rollback) && !empty($rollback), function() use ($rollback){
+			return self::runMigrationOldFilesRollback
+			(
+				$rollback
+			);},
+			function($result){if ($result !== true){self::$errors = array_merge( self::$errors , $result );}},
+			$command, Strings::STATUS_RUNNING_MIGRATION_OLD_FILES_ROLLBACK
+		);
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		if (array_key_exists("module-files", $rollback)) {
 			$command->info("INFO: Rollback dos Arquivos do Modulo (Views, Controllers, Models, CSS, etc).");
