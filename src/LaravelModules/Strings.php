@@ -71,6 +71,7 @@ class Strings {
 	const STATUS_MODULE_UNREGISTER = "INFO: Remove Modulo da Lista de Modulos Carregados";
 	const STATUS_MODULE_ROLLBACK_FILE_ROLLBACK = "INFO: Executando Rollback do Arquivo de Rollback do Modulo";
 	const STATUS_REMOVING_FOLDERS = "INFO: Removendo Pastas Criadas";
+	const STATUS_NO_MODULES_LOADED = "INFO: Nao Existem Modulos Carregados";
 
 	//SUCCESS
 	const SUCCESS_ROLLBACK = "INFO: Rollback Efetuado com Sucesso";
@@ -96,7 +97,6 @@ class Strings {
 	const ERROR_GETTING_MIGRATIONS_COUNTER_CONFIG = "ERRO: Problemas ao Capturar Configuracao do Contador de Migrations";
 	const ERROR_ROLLBACK_OLD_MIGRATION_FILES = "ERRO: Erro ao Restaurar Arquivos de Migration Anteriores";
 	const ERROR_ROLLBACK = "ERRO: Erro ao Executar o Rollback";
-
 	const ERROR_MODULE_FILES_ROLLBACK = "ERRO: Erro ao Deletar Arquivos do Modulo";
 	const ERROR_MODULE_FILES_REPLACE = "ERRO: Erro ao Restaurar Arquivos de Modulo Substituidos";
 	const ERROR_MODULE_CONFIG_ROLLBACK = "ERRO: Erro ao Restaurar Configuracoes Feitas Pelo Modulo";
@@ -107,6 +107,8 @@ class Strings {
 	const ERROR_INVALID_MODULE_NAME = "ERRO: Erro o Nome do Modulo Invalido";
 	const ERROR_GET_MODULE_NAME = "ERRO: Erro ao Capturar Nome do Modulo";
 	const ERROR_ROLLBACK_MODULE_DIRS = "ERRO: Erro ao Deletar os Diretorios Criados";
+	const ERROR_CANT_RESOLVE_LOADED_MODULES = "ERRO: Nao Foi Possivel Ler os Modulos Carregados";
+	const ERROR_CANT_RESOLVE_MODULE_NAME = "ERRO: Erro ao Obter Nome do Ultimo Modulo Carregado";
 
 	//ANSWERS
 	const SHORT_YES = 'y';
@@ -325,5 +327,16 @@ class Strings {
         return 'Comando executado com sucesso. '.$moduleType.'.'.$moduleName.' '.
         Configs::getConfig(PathHelper::getModuleConfigPath($moduleType, $moduleName), "versao");
     }
+
+	/**
+	 * Retorna uma mensagem de informação dizendo o nome do modulo a ser efetuado o rollback
+	 *
+	 * @param string $moduleType
+	 * @param string $moduleName
+	 * @return string
+	 */
+	public static function rollingBackModuleInfo($moduleType, $moduleName){
+		return 'Efetuando Rollback no Modulo "'.$moduleType.'.'.$moduleName.'"';
+	}
 
 }

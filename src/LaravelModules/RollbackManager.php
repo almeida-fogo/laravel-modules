@@ -526,7 +526,7 @@ class RollbackManager {
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		///////////////////////////////////////////ROLLBACK DOS ARQUIVOS DE MIGRATION///////////////////////////////////
-		RollbackManager::executeRollbackMethod(empty(RollbackManager::$errors) && is_array($rollback) && !empty($rollback), function() use ($rollback, $counterMigrationFilesDeleted){
+		RollbackManager::executeRollbackMethod(empty(RollbackManager::$errors) && is_array($rollback) && !empty($rollback), function() use ($rollback, &$counterMigrationFilesDeleted){
 			return RollbackManager::runMigrationFilesRollback
 			(
 				$rollback,
@@ -538,7 +538,7 @@ class RollbackManager {
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		///////////////////////////////////////////ROLLBACK DOS ARQUIVOS DE MIGRATION///////////////////////////////////
-		RollbackManager::executeRollbackMethod(empty(RollbackManager::$errors) && is_array($rollback) && !empty($rollback), function() use ($rollback, $counterMigrationFilesDeleted){
+		RollbackManager::executeRollbackMethod(empty(RollbackManager::$errors) && is_array($rollback) && !empty($rollback), function() use ($rollback, &$counterMigrationFilesDeleted){
 			return RollbackManager::runMigrationCounterRollback
 			(
 				$rollback,

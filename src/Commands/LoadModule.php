@@ -86,7 +86,7 @@ class LoadModule extends Command
 		$copyAll = false;
 
         //Pega modulos carredos em forma de array
-        $explodedLoadedModules = ModulesHelper::getLoadedModules($oldLoadedModules, $moduleType , $moduleName );
+        $explodedLoadedModules = ModulesHelper::getLoadedModules($oldLoadedModules);
 
 		//Separa os tipos dos modulos carregados em um array
 		$explodedLoadedTypes = ModulesHelper::explodeTypes( $explodedLoadedModules );

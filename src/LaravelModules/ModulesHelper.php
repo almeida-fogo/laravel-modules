@@ -99,28 +99,19 @@ class ModulesHelper {
 	 * Pega os modulos carregados em forma de array
 	 *
 	 * @param string $oldLoadedModules
-	 * @param string $moduleType
-	 * @param string $moduleName
 	 * @return array
 	 */
-	public static function getLoadedModules($oldLoadedModules, $moduleType, $moduleName){
-		$explodedLoadedModules = [];
-
-		//Verifica se o arquivo de configuração do modulo não existe
-		if (file_exists( PathHelper::getModuleConfigPath( $moduleType , $moduleName ) ))
+	public static function getLoadedModules($oldLoadedModules){
+		//if MODULOS_CARREGADOS == "", carrega array vazio (EVITA QUE TENHA UM SEPARADOR NO INICIO)
+		if ( empty($oldLoadedModules) )
 		{
-			//if MODULOS_CARREGADOS == "", carrega array vazio (EVITA QUE TENHA UM SEPARADOR NO INICIO)
-			if ( empty($oldLoadedModules) )
-			{
-				//Carrega array vazio
-				$explodedLoadedModules = [];
-			}
-			else
-			{
-				//Separa modulos carregados em um array
-				$explodedLoadedModules = explode( Strings::MODULE_SEPARATOR, $oldLoadedModules );
-			}
+			//Carrega array vazio
+			$explodedLoadedModules = [];
+		}else{
+			//Separa modulos carregados em um array
+			$explodedLoadedModules = explode( Strings::MODULE_SEPARATOR, $oldLoadedModules );
 		}
+
 		return $explodedLoadedModules;
 	}
 
