@@ -3,16 +3,14 @@
 namespace AlmeidaFogo\LaravelModules\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Str;
 
 use AlmeidaFogo\LaravelModules\LaravelModules\Configs;
 use AlmeidaFogo\LaravelModules\LaravelModules\ModulesHelper;
-use AlmeidaFogo\LaravelModules\LaravelModules\RollbackManager;
 use AlmeidaFogo\LaravelModules\LaravelModules\PathHelper;
 use AlmeidaFogo\LaravelModules\LaravelModules\Strings;
 
 
-class RollbackModule extends Command
+class ListModules extends Command
 {
 
 	public static $errors;
@@ -22,19 +20,19 @@ class RollbackModule extends Command
      *
      * @var string
      */
-    protected $signature = 'module:rollback';
+    protected $signature = 'module:list';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Descarrega o ultimo modulo da aplicacao';
+    protected $description = 'Mostra modulos carregados no projeto';
 
     /**
      * Create a new command instance.
      *
-     * @return RollbackModule
+     * @return ListModule
      */
     public function __construct()
     {
@@ -55,26 +53,10 @@ class RollbackModule extends Command
 			//Pega modulos carredos em forma de array
 			$explodedLoadedModules = ModulesHelper::getLoadedModules($oldLoadedModules);
 
-			if(is_array($explodedLoadedModules)){
-				$lastModule = $explodedLoadedModules[count($explodedLoadedModules)-1];
-
-				$lastModuleExploded = explode(Strings::MODULE_TYPE_NAME_SEPARATOR, $lastModule);
-
-				if(is_array($lastModuleExploded)){
-					$lastModuleType = $lastModuleExploded[0];
-					$lastModuleName = $lastModuleExploded[1];
-
-					$this->info(Strings::rollingBackModuleInfo($lastModuleExploded[0], $lastModuleExploded[1]));
-
-					$lastModuleRollbackFile = PathHelper::getModuleRollbackFile($lastModuleType, $lastModuleName);
-
-					RollbackManager::execRollback($lastModuleRollbackFile, $this);
-				}else{
-					$this->error(Strings::ERROR_CANT_RESOLVE_MODULE_NAME);
-				}
-			}else{
-				$this->error(Strings::ERROR_CANT_RESOLVE_LOADED_MODULES);
+			foreach ($explodedLoadedModules as $key => $module){
+				$this->info($key.' - '.$module);
 			}
+
 		}else{
 			$this->info(Strings::STATUS_NO_MODULES_LOADED);
 		}

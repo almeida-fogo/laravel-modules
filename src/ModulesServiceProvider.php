@@ -39,5 +39,10 @@ class ModulesServiceProvider extends ServiceProvider
 			return $app['AlmeidaFogo\LaravelModules\Commands\RollbackModule'];
 		});
 		$this->commands('command.almeida-fogo.rollbackmodule');
+
+		$this->app->singleton('command.almeida-fogo.listmodules', function ($app) {
+			return $app['AlmeidaFogo\LaravelModules\Commands\ListModules'];
+		});
+		$this->commands('command.almeida-fogo.listmodules');
     }
 }
