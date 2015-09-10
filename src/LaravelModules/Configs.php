@@ -13,7 +13,7 @@ class Configs{
 	 */
 	public static function getConfig($configPath, $index = null){
 		//Roda o arquivo de configuração
-		$value = eval(str_replace("<?php", "", file_get_contents($configPath))); //TODO: Adicionar ao arquivo de strings
+		$value = eval(str_replace(Strings::PHP_TAG, Strings::EMPTY_STRING, file_get_contents($configPath)));
 		if (is_array($value)){
 			//verifica se o indice do array de configurações é nulo
 			if ($index != null)
@@ -44,7 +44,7 @@ class Configs{
 	 */
 	public static function setConfig($path, $config, $value){
 		//verifica se os parametros são validos
-		if ($config != '\'\'' && $path != base_path().'/'.'.php'){ //TODO: Adicionar ao arquivo de strings
+		if ($config != '\'\'' && $path != base_path().Strings::PATH_SEPARATOR.Strings::PHP_EXTENSION){
 			//verifica se o arquvido onde estão as configs existe
 			if (file_exists($path)){
 				//pega no arquivo a posição onde esta a configuração que deve ser alterada
@@ -52,7 +52,7 @@ class Configs{
 				//verifica se a configuração existe no arquivo
 				if ($configPos != false){
 					// pega a posição do operador seta (=>) apos a cofiguração
-					$arrowPos = strpos(file_get_contents($path), '=>', $configPos)+2; //TODO: Adicionar ao arquivo de strings
+					$arrowPos = strpos(file_get_contents($path), Strings::ARRAY_ASSIGN, $configPos)+2;
 					//verifica se o operador seta apos a confiração existe
 					if ($arrowPos != false){
 						//captura a posição da proxima virgula apos o operador seta
@@ -85,12 +85,12 @@ class Configs{
 	 * @param mixed $value
 	 * @return bool|int
 	 */
-	public static function setLaravelConfig($config, $value){ //TODO: Refatorar para arquivo de strings
-		$path = explode('.',$config);
+	public static function setLaravelConfig($config, $value){
+		$path = explode(Strings::MODULE_CONFIG_CONFIGS_SEPARATOR,$config);
 		if ($path != array()){
 			$variable = "'".array_pop($path)."'";
-			$path = base_path().'/config/'.implode("/", $path).'.php';
-			if ($variable != '\'\'' && $path != base_path().'/'.'.php'){
+			$path = PathHelper::getConfigDir(implode(Strings::PATH_SEPARATOR, $path).Strings::PHP_EXTENSION);
+			if ($variable != '\'\'' && $path != base_path().Strings::PATH_SEPARATOR.Strings::PHP_EXTENSION){
 				if (file_exists($path)){
 					return self::setConfig($path, $variable, $value);
 				}

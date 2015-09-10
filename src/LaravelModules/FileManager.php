@@ -20,7 +20,7 @@ class FileManager{
 		}
 
 		foreach (scandir($dir) as $item) {
-			if ($item == '.' || $item == '..') { //TODO: Adicionar ao arquivo de strings
+			if ($item == Strings::CURRENT_DIR_SYMBOL || $item == Strings::PARENT_DIR_SYMBOL) {
 				continue;
 			}
 

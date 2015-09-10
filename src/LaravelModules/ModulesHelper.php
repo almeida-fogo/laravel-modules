@@ -57,7 +57,7 @@ class ModulesHelper {
 		foreach ( $loadedModules as $module)
 		{
 			//Pega o tipo do modulo
-			$type = explode(".", $module)[0]; //TODO: Adicionar ao arquivo de strings
+			$type = explode(Strings::MODULE_TYPE_NAME_SEPARATOR, $module)[0];
 			//Verifica se o tipo ja foi colocado na lista
 			if (!in_array($type, $types)){
 				//Adiciona a lista
@@ -76,14 +76,14 @@ class ModulesHelper {
 		try{
 			$errors = [];
 
-			if (!(count(DB::select(DB::raw("SHOW TABLES LIKE '".Strings::TABLE_PROJECT_MODULES."';")))>0)){ //TODO: Refatorar para usar statemet
-				DB::select( DB::raw("											        					".
+			if (!(count(DB::select(DB::raw("SHOW TABLES LIKE '".Strings::TABLE_PROJECT_MODULES."';")))>0)){
+				DB::statement(		"											        					".
 									"CREATE TABLE ".Strings::TABLE_PROJECT_MODULES."    					".
 									"(											        					".
 									"id			int NOT NULL PRIMARY KEY AUTO_INCREMENT,					".
 									Strings::TABLE_PROJECT_MODULES_NAME."	VARCHAR (255) UNIQUE NOT NULL	".
 									")																		"
-				));
+				);
 				if(!(count( DB::select( DB::raw("SHOW TABLES LIKE '".Strings::TABLE_PROJECT_MODULES."';")))>0)){
 					$errors[] = Strings::ERROR_CREATE_MIGRATION_CHECK_TABLE;
 				}
@@ -179,7 +179,7 @@ class ModulesHelper {
 			if ( !empty( $dependencia ) )
 			{
 				//Dependencia quebrada em tipo e nome
-				$dependenciaBroken = explode( '.' , $dependencia ); //TODO: Adicionar ao arquivo de strings
+				$dependenciaBroken = explode( Strings::MODULE_TYPE_NAME_SEPARATOR , $dependencia );
 				//Tipo da dependencia
 				$dependenciaType = $dependenciaBroken[ 0 ];
 				//Verifica se é uma dependencia especifica
@@ -254,10 +254,10 @@ class ModulesHelper {
 		$errors = [ ];
 
 		//Pega configurações
-		$configuracoes = Configs::getConfig( PathHelper::getModuleConfigPath($moduleType, $moduleName) , "configuracoes" );
+		$configuracoes = Configs::getConfig( PathHelper::getModuleConfigPath($moduleType, $moduleName) , Strings::CONFIG_CONFIGURATIONS );
 
 		//Inicia o Rollback de arquivos configurados
-		$rollback["module-configs"] = []; //TODO: Adicionar ao arquivo de strings
+		$rollback[Strings::ROLLBACK_MODULE_CONFIGS_TAG] = [];
 
 		foreach ( $configuracoes as $configuracao => $valor )
 		{
@@ -280,7 +280,7 @@ class ModulesHelper {
 				if ( Configs::setLaravelConfig( $configuracao , $valor ) == false )
 				{
 					//Adiciona o erro para o array de erros
-					$errors[ ] = Strings::cantMakeModuleConfig($moduleType.'.'.$moduleName, $configuracao); //TODO: Adicionar ao arquivo de strings
+					$errors[ ] = Strings::cantMakeModuleConfig($moduleType.Strings::MODULE_TYPE_NAME_SEPARATOR.$moduleName, $configuracao);
 				}
 			}
 		}

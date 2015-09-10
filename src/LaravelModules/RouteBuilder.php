@@ -26,13 +26,13 @@ class RouteBuilder{
 		//Verifica se o arquivo de rotas dado para ser incluido existe
 		if (file_exists($filePathToInclude)){
 			//Pega o diretorio do arquivo e explode em um array
-			$explodedFilePath = explode("/", $filePathToInclude); //TODO: Adicionar ao arquivo de strings
+			$explodedFilePath = explode(Strings::PATH_SEPARATOR, $filePathToInclude);
 			//pega o tamanho do array explodido do nome do arquivo
 			$explodedFilePathSize = count($explodedFilePath);
 			//verifica se o diretorio explodido gerou um array valido
 			if ($explodedFilePathSize >= 3){
 				//em caso positivo captura o tipo e o nome do modulo a que o o arquivo de rotas pertence e salva em $key
-				$key = $explodedFilePath[$explodedFilePathSize-3]."-".$explodedFilePath[$explodedFilePathSize-2]; //TODO: Adicionar ao arquivo de strings
+				$key = $explodedFilePath[$explodedFilePathSize-3].Strings::MODULE_CONFIG_CONFIGS_SEPARATOR_REPLACEMENT.$explodedFilePath[$explodedFilePathSize-2];
 				//pega o conteudo do arquivo de rota removendo somente o <?php
 				$fileContent = file_get_contents($filePathToInclude, null, null, 5);
 				//retorna  o array de routeBuilder adicionado das novas rotas
@@ -68,9 +68,9 @@ class RouteBuilder{
 	 */
 	public static function saveRoutesBuilder(array $routeBuilderArray, $routeBuilderFile){
 		//build php route header
-		$phpStringArray = //TODO: Adicionar ao arquivo de strings
-			"<?php".chr(13).chr(13).
-			"return".chr(13)
+		$phpStringArray =
+			Strings::PHP_TAG.chr(13).chr(13).
+			Strings::RETURN_TAG.chr(13)
 			.chr(13)
 			."["
 			.chr(13);
@@ -78,10 +78,10 @@ class RouteBuilder{
 		foreach ($routeBuilderArray as $key => $value)
 		{
 			//adiciona a rota domodulo e como chave tipo-nome
-			$phpStringArray .= '"'.$key.'" => "'.$value.'",'.chr(13).chr(13); //TODO: Adicionar ao arquivo de strings
+			$phpStringArray .= '"'.$key.'" => "'.$value.'",'.chr(13).chr(13);
 		}
 		//fecha o arrayde modulos
-		$phpStringArray .= "];"; //TODO: Adicionar ao arquivo de strings
+		$phpStringArray .= "];";
 
 		//salva arquivo por cima do conteudo do arquivo anterior
 		return file_put_contents(
@@ -102,28 +102,25 @@ class RouteBuilder{
 	 */
 	public static function buildRoutes(array $routeBuilderArray){
 		//creia cabeçalho do arquivode rotas
-		$routes = "<?php".chr(13).chr(13). //TODO: Adicionar ao arquivo de strings
-			"//This is a RoutesBuilder generated routes file" //TODO: Adicionar ao arquivo de strings
+		$routes = Strings::PHP_TAG.chr(13).chr(13).
+			Strings::ROUTER_BUILDER_GEN_FILE_STRING_HEADER
 			.chr(13).chr(13);
 
 		//Faz um loop ema todos os itens do arquivo array do raouteBuilder
 		foreach ( $routeBuilderArray as $module => $moduleRoute)
 		{
 			//Constroi rotas para o modulo
-			$routes .= "//".$module./*diz de que modulo vieram as rotas*/ //TODO: Adicionar ao arquivo de strings
+			$routes .= "//".$module./*diz de que modulo vieram as rotas*/
 				$moduleRoute.chr(13).chr(13).chr(13).chr(13);/*Adiciona as rotas do modulo*/
 		}
 
-		//rota para o arquivo definitivo de rotas
-		$routesFile = base_path().'/app/Http/routes.php'; //TODO: Adicionar ao arquivo de strings
-
 		//substitui o conteudo do arquivo de rotas pelo novo conteudo
 		return file_put_contents(
-			$routesFile,
+			PathHelper::getLaravelRoutesPath(),
 			str_replace(
-				file_get_contents($routesFile),
+				file_get_contents(PathHelper::getLaravelRoutesPath()),
 				$routes,
-				file_get_contents($routesFile)
+				file_get_contents(PathHelper::getLaravelRoutesPath())
 			));
 	}
 

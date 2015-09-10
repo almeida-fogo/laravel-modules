@@ -27,12 +27,15 @@ class Strings {
 	const MODULE_CONFIG_CONFIGS_SEPARATOR = ".";
 	const MODULE_CONFIG_CONFIGS_SEPARATOR_REPLACEMENT = '-';
 	const MODULE_CONFIG_CONFLICT_SEPARATOR = '.';
+	const CURRENT_DIR_SYMBOL = '.';
+	const PARENT_DIR_SYMBOL = '..';
 
 	//CONFIG LABEL
 	const MODULE_CONFIG_CONFLICT = "conflitos";
 	const MODULE_CONFIG_DEPENDENCIES = "dependencias";
 	const CONFIG_LOADED_MODULES = "modulosCarregados";
 	const CONFIG_MIGRATIONS_COUNTER = "migrationsCounter";
+	const CONFIG_CONFIGURATIONS = "configuracoes";
 
 	//ROLLBACK
 	const ROLLBACK_LOADED_MODULE_TAG = "LoadedModule";
@@ -110,6 +113,9 @@ class Strings {
 	const ERROR_CANT_RESOLVE_LOADED_MODULES = "ERRO: Nao Foi Possivel Ler os Modulos Carregados";
 	const ERROR_CANT_RESOLVE_MODULE_NAME = "ERRO: Erro ao Obter Nome do Ultimo Modulo Carregado";
 
+	//ROUTEBUILDER
+	const ROUTER_BUILDER_GEN_FILE_STRING_HEADER = "//This is a RoutesBuilder generated routes file";
+
 	//ANSWERS
 	const SHORT_YES = 'y';
 	const SHORT_NO = 'n';
@@ -123,6 +129,12 @@ class Strings {
 	const GIT_KEEP_FILE_NAME = '.gitkeep';
     const TRUE_STRING = "true";
 	const WRITE_FILE_TAG = 'w';
+	const PHP_TAG = "<?php";
+	const ARRAY_ASSIGN = '=>';
+	const RETURN_TAG = "return";
+
+	//CODIFICATION
+	const UTF8 = "UTF-8";
 
 	/**
 	 * Retorna mensagem de conflito entre modulos
