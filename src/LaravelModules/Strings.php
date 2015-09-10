@@ -66,6 +66,14 @@ class Strings {
 	const STATUS_RUNNING_MIGRATION_FILES_ROLLBACK = "INFO: Rollback dos Arquivos de Migration";
 	const STATUS_RUNNING_MIGRATION_COUNTER_ROLLBACK = "INFO: Rollback do Contador de Migrations";
 	const STATUS_RUNNING_MIGRATION_OLD_FILES_ROLLBACK = "INFO: Rollback dos Arquivos de Migration Removidos";
+	const STATUS_MODULE_FILE_ROLLBACK = "INFO: Rollback dos Arquivos do Modulo";
+	const STATUS_MODULE_CONFIG_ROLLBACK = "INFO: Rollback das Configuracoes Feitas Pelo Modulo";
+	const STATUS_MODULE_UNREGISTER = "INFO: Remove Modulo da Lista de Modulos Carregados";
+	const STATUS_MODULE_ROLLBACK_FILE_ROLLBACK = "INFO: Executando Rollback do Arquivo de Rollback do Modulo";
+	const STATUS_REMOVING_FOLDERS = "INFO: Removendo Pastas Criadas";
+
+	//SUCCESS
+	const SUCCESS_ROLLBACK = "INFO: Rollback Efetuado com Sucesso";
 
 	//ERRORS
 	const ERROR_ROUTES_FILE_SAVE = "ERRO: Problemas ao gerar o arquivo de rotas";
@@ -87,6 +95,18 @@ class Strings {
 	const ERROR_REDEFINING_MIGRATIONS_COUNTER = "ERRO: Problemas ao Definir Configuracao do Contador de Migrations";
 	const ERROR_GETTING_MIGRATIONS_COUNTER_CONFIG = "ERRO: Problemas ao Capturar Configuracao do Contador de Migrations";
 	const ERROR_ROLLBACK_OLD_MIGRATION_FILES = "ERRO: Erro ao Restaurar Arquivos de Migration Anteriores";
+	const ERROR_ROLLBACK = "ERRO: Erro ao Executar o Rollback";
+
+	const ERROR_MODULE_FILES_ROLLBACK = "ERRO: Erro ao Deletar Arquivos do Modulo";
+	const ERROR_MODULE_FILES_REPLACE = "ERRO: Erro ao Restaurar Arquivos de Modulo Substituidos";
+	const ERROR_MODULE_CONFIG_ROLLBACK = "ERRO: Erro ao Restaurar Configuracoes Feitas Pelo Modulo";
+	const ERROR_INVALID_CONFIG_ROLLBACK = "ERRO: Rollback de Configuracao Invalida";
+	const ERROR_ALTER_CONFIG_ROLLBACK = "ERRO: Erro ao Alterar Configuracao da Lista de Modulos Carregados";
+	const ERROR_MODULE_LIST_GET = "ERRO: Problemas ao Capturar Configuracao da Lista de Modulos Carregados";
+	const ERROR_WRITE_ROLLBACK_FILE = "ERRO: Erro ao Escrever Arquivo de Rollback";
+	const ERROR_INVALID_MODULE_NAME = "ERRO: Erro o Nome do Modulo Invalido";
+	const ERROR_GET_MODULE_NAME = "ERRO: Erro ao Capturar Nome do Modulo";
+	const ERROR_ROLLBACK_MODULE_DIRS = "ERRO: Erro ao Deletar os Diretorios Criados";
 
 	//ANSWERS
 	const SHORT_YES = 'y';
