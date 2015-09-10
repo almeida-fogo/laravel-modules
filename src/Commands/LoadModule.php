@@ -120,7 +120,7 @@ class LoadModule extends Command
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		////////////////////////////////////MARCA O MODULO COMO CARREGADO///////////////////////////////////////////////
-		ModulesHelper::executeHelperMethod(empty(LoadModule::$errors), function()use($explodedLoadedModules, $moduleType, $moduleName, $rollback){
+		ModulesHelper::executeHelperMethod(empty(LoadModule::$errors), function()use($explodedLoadedModules, $moduleType, $moduleName, &$rollback){
 			return ModulesHelper::setModuleAsLoaded(
  			    $explodedLoadedModules, $moduleType, $moduleName, $rollback
 			);},
@@ -130,7 +130,7 @@ class LoadModule extends Command
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		//////////////////////////////APLICA AS CONFIGURAÇÕES REQUERIDAS PELO MODULO////////////////////////////////////
-		ModulesHelper::executeHelperMethod(empty(LoadModule::$errors), function()use($moduleType, $moduleName, $rollback){
+		ModulesHelper::executeHelperMethod(empty(LoadModule::$errors), function()use($moduleType, $moduleName, &$rollback){
 			return ModulesHelper::makeModuleConfigs
 			(
 				$moduleType, $moduleName, $rollback
@@ -141,7 +141,7 @@ class LoadModule extends Command
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		//////////////////////////////////////////////ORDINARY FILE COPY////////////////////////////////////////////////
-		ModulesHelper::executeHelperMethod(empty(LoadModule::$errors), function()use($moduleType, $moduleName, $copyAll, $rollback, $that){
+		ModulesHelper::executeHelperMethod(empty(LoadModule::$errors), function()use($moduleType, $moduleName, $copyAll, &$rollback, $that){
 			return ModulesHelper::makeOrdinaryCopies
 			(
 			    $moduleType, $moduleName, $copyAll, $rollback, $that
@@ -152,7 +152,7 @@ class LoadModule extends Command
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		////////////////////////////////////////////MIGRATION FILES COPY////////////////////////////////////////////////
-		ModulesHelper::executeHelperMethod(empty(LoadModule::$errors), function()use($moduleType, $moduleName, $copyAll, $rollback, $that){
+		ModulesHelper::executeHelperMethod(empty(LoadModule::$errors), function()use($moduleType, $moduleName, $copyAll, &$rollback, $that){
 			return ModulesHelper::makeMigrationsCopies
 			(
 				$moduleType, $moduleName, $copyAll, $rollback, $that
@@ -163,7 +163,7 @@ class LoadModule extends Command
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		////////////////////////////////////////////////ROUTE_BUILDER///////////////////////////////////////////////////
-		ModulesHelper::executeHelperMethod(empty(LoadModule::$errors), function()use($moduleType,$moduleName, $rollback){
+		ModulesHelper::executeHelperMethod(empty(LoadModule::$errors), function()use($moduleType,$moduleName, &$rollback){
 			return ModulesHelper::buildRoutes
 			(
 				$moduleType, $moduleName, $rollback
@@ -174,7 +174,7 @@ class LoadModule extends Command
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		////////////////////////////////////////////////RUN MODULE MIGRATIONS///////////////////////////////////////////
-		ModulesHelper::executeHelperMethod(empty(LoadModule::$errors), function()use($moduleType, $moduleName, $rollback, $that){
+		ModulesHelper::executeHelperMethod(empty(LoadModule::$errors), function()use($moduleType, $moduleName, &$rollback, $that){
 			return ModulesHelper::runMigrations
 			(
 			   	$moduleType, $moduleName, $rollback, $that
@@ -185,7 +185,7 @@ class LoadModule extends Command
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		////////////////////////////////////////////////GENERATE ROLLBACK FILE//////////////////////////////////////////
-		ModulesHelper::executeHelperMethod(empty(LoadModule::$errors), function()use($moduleType, $moduleName, $rollback){
+		ModulesHelper::executeHelperMethod(empty(LoadModule::$errors), function()use($moduleType, $moduleName, &$rollback){
 			return ModulesHelper::createRollbackFile
 			(
 			   	$moduleType, $moduleName, $rollback
