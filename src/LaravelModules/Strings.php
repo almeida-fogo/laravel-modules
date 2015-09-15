@@ -112,6 +112,7 @@ class Strings {
 	const ERROR_ROLLBACK_MODULE_DIRS = "ERRO: Erro ao Deletar os Diretorios Criados";
 	const ERROR_CANT_RESOLVE_LOADED_MODULES = "ERRO: Nao Foi Possivel Ler os Modulos Carregados";
 	const ERROR_CANT_RESOLVE_MODULE_NAME = "ERRO: Erro ao Obter Nome do Ultimo Modulo Carregado";
+	const ERROR_INEXISTENT_MODULE = "ERRO: O Modulo que Voce Esta Tentando Carregar nao Existe";
 
 	//ROUTEBUILDER
 	const ROUTER_BUILDER_GEN_FILE_STRING_HEADER = "//This is a RoutesBuilder generated routes file";
@@ -351,4 +352,14 @@ class Strings {
 		return 'Efetuando Rollback no Modulo "'.$moduleType.'.'.$moduleName.'"';
 	}
 
+	/**
+	 * Retorna uma mensagem de informação dizendo que esta checando se o modulo existe
+	 *
+	 * @param string $moduleType
+	 * @param string $moduleName
+	 * @return string
+	 */
+	public static function checkModuleExistence($moduleType, $moduleName){
+		return 'INFO: Verificando a Existencia do modulo "'.$moduleType.'.'.$moduleName.'"';
+	}
 }

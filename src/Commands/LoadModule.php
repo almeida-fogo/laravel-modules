@@ -94,7 +94,18 @@ class LoadModule extends Command
 		//Cria table de verificação das migrations
         LoadModule::$errors = ModulesHelper::createMigrationsCheckTable();
 
-        //TODO: checar se o modulo existe e se ja esta carregado
+		/////////////////////////////////CHECA PELA EXISTENCIA DO MODULO////////////////////////////////////////////////
+		ModulesHelper::executeHelperMethod(empty(LoadModule::$errors), function()use($moduleType, $moduleName, $explodedLoadedModules, $explodedLoadedTypes){
+			return ModulesHelper::checkModuleExistence(
+				$moduleType,
+				$moduleName
+			);},
+			function($result){if ($result !== true){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}},
+			$this, Strings::checkModuleExistence($moduleType, $moduleName)
+		);
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+		//TODO: checar se o modulo ja esta carregado
 
 		/////////////////////////////////CHECA POR CONFLITOS ENTRE OS MODULOS///////////////////////////////////////////
 		ModulesHelper::executeHelperMethod(empty(LoadModule::$errors), function()use($moduleType, $moduleName, $explodedLoadedModules, $explodedLoadedTypes){
@@ -104,7 +115,7 @@ class LoadModule extends Command
 				$explodedLoadedModules,
 				$explodedLoadedTypes
 			);},
-			function($result){if ($result !== false){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}}
+			function($result){if ($result !== true){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}}
 		);
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -115,7 +126,7 @@ class LoadModule extends Command
 		   		$explodedLoadedModules,
 		   		$explodedLoadedTypes
 			);},
-			function($result){if ($result !== false){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}}
+			function($result){if ($result !== true){LoadModule::$errors = array_merge( LoadModule::$errors , $result );}}
 		);
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -199,11 +210,13 @@ class LoadModule extends Command
 		if (empty(LoadModule::$errors)){//Se os comandos rodarem com sucesso
 			//Comentario comando executado com sucesso
 			$this->comment(Strings::successfulyRunModuleLoad($moduleType, $moduleName));
+			return true;
 		}else{//Se ocorrer erro ao rodar os comandos
             foreach (LoadModule::$errors as $error) {
                 $this->error($error);
             }
 			RollbackManager::execRollback($rollback, $this);
+			return false;
 		}
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     }

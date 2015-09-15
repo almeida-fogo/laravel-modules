@@ -12,6 +12,7 @@ namespace AlmeidaFogo\LaravelModules\LaravelModules;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Mockery\Exception;
+use PDOException;
 
 class ModulesHelper {
 
@@ -88,7 +89,7 @@ class ModulesHelper {
 					$errors[] = Strings::ERROR_CREATE_MIGRATION_CHECK_TABLE;
 				}
 			}
-		}catch (Exception $e){
+		}catch (PDOException $e){
             $errors[] = Strings::ERROR_CREATE_MIGRATION_CHECK_TABLE;
 		}
 
@@ -157,7 +158,24 @@ class ModulesHelper {
 			}
 		}
 
-		return !empty($errors) ? $errors : false;
+		return !empty($errors) ? $errors : true;
+	}
+
+	/**
+	 *  Checa se determinado modulo existe disponivel para carga
+	 *
+	 * @param string $moduleType
+	 * @param string $moduleName
+	 * @return array|bool
+	 */
+	public static function checkModuleExistence($moduleType, $moduleName){
+		$errors = [];
+
+		if(!file_exists(PathHelper::getModuleRootPath($moduleType, $moduleName))){
+			$errors[] = Strings::ERROR_INEXISTENT_MODULE;
+		}
+
+		return !empty($errors) ? $errors : true;
 	}
 
 
@@ -204,7 +222,7 @@ class ModulesHelper {
 			}
 		}
 
-		return !empty($errors) ? $errors : false;
+		return !empty($errors) ? $errors : true;
 	}
 
 	/**

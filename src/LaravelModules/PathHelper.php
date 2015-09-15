@@ -37,6 +37,18 @@ class PathHelper{
 	}
 
 	/**
+	 * Caminho da raiz do modulo
+	 *
+	 * @param string $moduleType
+	 * @param string $moduleName
+	 * @return string
+	 */
+	public static function getModuleRootPath($moduleType, $moduleName)
+	{
+		return base_path().'/app/Modulos/'.$moduleType.'/'.$moduleName;
+	}
+
+	/**
 	 * Retorna o caminho para o arquivo requisitado dentro da pasta config
 	 *
 	 * @param string $fileName
