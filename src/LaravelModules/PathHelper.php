@@ -91,12 +91,22 @@ class PathHelper{
 	/**
 	 * @param string $moduleType
 	 * @param string $moduleName
+	 * @return string
+	 */
+	public static function getModuleAssetsPath($moduleType, $moduleName)
+	{
+		return base_path().'/app/Modulos/'.$moduleType.'/'.$moduleName.'/Assets/';
+	}
+
+	/**
+	 * @param string $moduleType
+	 * @param string $moduleName
 	 * @param string $more
 	 * @return string
 	 */
 	public static function getModulePublicPath($moduleType, $moduleName, $more = '')
 	{
-		return base_path().'/app/Modulos/'.$moduleType.'/'.$moduleName.'/Public'.$more.'/';
+		return base_path().'/app/Modulos/'.$moduleType.'/'.$moduleName.'/Public/'.$more;
 	}
 
 	/**
@@ -123,6 +133,16 @@ class PathHelper{
 	public static function getLaravelViewsPath($moduleType, $moduleName)
 	{
 		return base_path().'/resources/views/'.$moduleType.'_'.$moduleName.'/';
+	}
+
+	/**
+	 * @param string $moduleType
+	 * @param string $moduleName
+	 * @return string
+	 */
+	public static function getLaravelAssetsPath($moduleType, $moduleName)
+	{
+		return base_path().'/resources/assets/'.$moduleType.'_'.$moduleName.'/';
 	}
 
 	/**

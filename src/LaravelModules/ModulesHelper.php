@@ -178,6 +178,23 @@ class ModulesHelper {
 		return !empty($errors) ? $errors : true;
 	}
 
+	/**
+	 *  Checa se determinado modulo esta carregado
+	 *
+	 * @param string $moduleType
+	 * @param string $moduleName
+	 * @param array $explodedLoadedModules
+	 * @return array|bool
+	 */
+	public static function checkIfModuleLoaded($moduleType, $moduleName, array $explodedLoadedModules){
+		$errors = [];
+
+		if(array_search($moduleType.$moduleName, $explodedLoadedModules) == false){
+			$errors[] = Strings::ERROR_MODULE_NOT_LOADED;
+		}
+
+		return !empty($errors) ? $errors : true;
+	}
 
 	/**
 	 *  Checa se existem erros de dependencia e retorna os modulos requeridos
@@ -308,7 +325,6 @@ class ModulesHelper {
 
 	/**
 	 * Copia arquivos convencionais do modulo (qualquer coisa exceto migrations) para as respectivas pastas
-	 * TODO: Tornar essa copia recurssiva para copiar outras pastas principalmente dentro de public
 	 *
 	 * @param string $moduleType
 	 * @param string $moduleName
@@ -329,78 +345,10 @@ class ModulesHelper {
 			PathHelper::getModuleModelsPath($moduleType, $moduleName) => PathHelper::getLaravelModelsPath(),
 			PathHelper::getModuleViewsPath($moduleType, $moduleName) => PathHelper::getLaravelViewsPath($moduleType, $moduleName),
 			PathHelper::getModulePublicPath($moduleType, $moduleName) => PathHelper::getLaravelPublicPath($moduleType, $moduleName),
-			PathHelper::getModulePublicPath($moduleType, $moduleName, '/css') => PathHelper::getLaravelPublicPath($moduleType, $moduleName, '/css'), 			//TODO: Remover ao adicionar copia recurssiva
-			PathHelper::getModulePublicPath($moduleType, $moduleName, '/imagens') => PathHelper::getLaravelPublicPath($moduleType, $moduleName, '/imagens'),	//TODO: Remover ao adicionar copia recurssiva
-			PathHelper::getModulePublicPath($moduleType, $moduleName, '/js') => PathHelper::getLaravelPublicPath($moduleType, $moduleName, '/js'),				//TODO: Remover ao adicionar copia recurssiva
+			PathHelper::getModuleAssetsPath($moduleType, $moduleName) => PathHelper::getLaravelAssetsPath($moduleType, $moduleName),
 		];
 
-		//loop em todos os diretorios de destino
-		foreach($paths as $key => $value){
-			if(!is_dir($value)){//Se o diretorio não existir
-				//Cria o diretorio que não existe
-				if (mkdir($value)){
-					//Cria registro no rollback dizendo uma pasta foi criada
-					$rollback[Strings::ROLLBACK_DIR_CREATED_TAG][] = $value;
-				}
-			}
-		}
-
-		//Loop em todas as pastas
-		foreach($paths as $key => $value){
-			if (empty($errors)){//Se os comandos anteriores rodarem com sucesso
-				//Copia lista de arquivos no diretorio para variavel arquivos
-				$arquivos = scandir($key);
-				//Loop em todos os arquivos do modulo
-				for( $i = Constants::FIRST_FILE; $i < count($arquivos); $i++){
-					if (empty($errors) && !is_dir($value.$arquivos[$i])){//Se os comandos anteriores rodarem com sucesso e o arquivo não for uma pasta
-
-						$explodedFileName  = explode(Strings::PATH_SEPARATOR, $value.$arquivos[$i]);
-						$filename = $explodedFileName[count($explodedFileName)-1];
-
-						//Verifica se o arquivo existe
-						if (!file_exists($value.$arquivos[$i])){
-							//Cria registro no rollback dizendo que o arquivo foi copiado
-							$rollback[Strings::ROLLBACK_MODULE_ORDINARY_FILE_COPY_TAG][EscapeHelper::encode($value.$arquivos[$i])] = Strings::EMPTY_STRING;
-							//verifica se a copia ocorreu com sucesso
-							if (copy($key.$arquivos[$i], $value.$arquivos[$i]) == false){
-								//Printa msg de erro
-								$errors[] = (Strings::ordinaryFileCopyError($value.$arquivos[$i]));
-							}
-						}else if (strtoupper($filename) != strtoupper(Strings::GIT_KEEP_FILE_NAME)){//Caso ja exista um arquivo com o mesmo nome no diretorio de destino
-							//Inicializa variavel que vai receber resposta do usuario dizendo o que fazer
-							// com o conflito
-							$answer = Strings::EMPTY_STRING;
-							//Enquanto o usuario não devolver uma resposta valida
-							while ($copyAll != true && $answer != Strings::SHORT_YES && $answer != Strings::SHORT_NO && $answer !=
-								Strings::SHORT_ALL && $answer != Strings::SHORT_CANCEL){
-								//Faz pergunta para o usuario de como proceder
-								$answer = $command->ask(Strings::replaceOrdinaryFiles($value.$arquivos[$i]), false);
-							}
-							//Se a resposta for sim, ou all
-							if (strtolower($answer) == Strings::SHORT_YES || strtolower($answer) == Strings::SHORT_ALL || $copyAll == true){
-								//se a resposta for all
-								if (strtolower($answer) == Strings::SHORT_ALL){
-									//seta variavel all para true
-									$copyAll = true;
-								}
-								//Faz backup do arquivo que será substituido
-								$rollback[Strings::ROLLBACK_MODULE_ORDINARY_FILE_COPY_TAG][EscapeHelper::encode($value.$arquivos[$i])] = EscapeHelper::encode(file_get_contents($value.$arquivos[$i]));
-								//verifica se a substituição ocorreu com sucesso
-								if (copy($key.$arquivos[$i], $value.$arquivos[$i]) == false){//Se houver erro ao copiar arquivo
-									//Printa msg de erro
-									$errors[] = (Strings::ordinaryFileReplaceError($value.$arquivos[$i]));
-								}
-							}else if (strtolower($answer) == Strings::SHORT_CANCEL){//se a resposta foi cancelar
-								//Printa msg de erro
-								$errors[] = (Strings::userRequestedAbort());
-								//break the file loop
-								break(2);
-							}
-						}
-					}
-				}
-			}
-		}
+		FileManager::recursiveCopy($errors, $copyAll, $rollback, $command, $paths);
 
 		return !empty($errors) ? $errors : true;
 	}
@@ -413,9 +361,10 @@ class ModulesHelper {
 	 * @param string $copyAll
 	 * @param array $rollback
 	 * @param Command $command
+	 * @param bool $allowReplace
 	 * @return array|bool
 	 */
-	public static function makeMigrationsCopies($moduleType, $moduleName, &$copyAll, array &$rollback, Command $command){
+	public static function makeMigrationsCopies($moduleType, $moduleName, &$copyAll, array &$rollback, Command $command, $allowReplace = true){
 		$errors = [ ];
 
 		//Inicia o Rollback de arquivos copiados
@@ -467,53 +416,56 @@ class ModulesHelper {
 						PathHelper::getLaravelMigrationsPath().Strings::timestampPadding($migrationCounter).Strings::MIGRATIONS_WORD_SEPARATOR.$SimplifiedModuleMigrationName
 					);
 				}else{//Se o arquivo ja existir
-					//Inicializa variavel que vai receber resposta do usuario dizendo o que fazer
-					// com o conflito
-					$answer = Strings::EMPTY_STRING;
-					//Enquanto o usuario não devolver uma resposta valida
-					while ($copyAll != true && $answer != Strings::SHORT_YES && $answer != Strings::SHORT_NO && $answer != Strings::SHORT_ALL && $answer != Strings::SHORT_CANCEL){
-						//Faz pergunta para o usuario de como proceder
-						$answer = $command->ask(Strings::replaceMigrationFiles($arquivos[$i]), false);
-					}
-					//Se a resposta for sim, ou all
-					if (strtolower($answer) == Strings::SHORT_YES || strtolower($answer) == Strings::SHORT_ALL || $copyAll == true){
-						//se a resposta for all
-						if (strtolower($answer) == Strings::SHORT_ALL){
-							//seta variavel all para true
-							$copyAll = true;
+					if($allowReplace){
+						//Inicializa variavel que vai receber resposta do usuario dizendo o que fazer
+						// com o conflito
+						$answer = Strings::EMPTY_STRING;
+						//Enquanto o usuario não devolver uma resposta valida
+						while ($copyAll != true && $answer != Strings::SHORT_YES && $answer != Strings::SHORT_NO && $answer != Strings::SHORT_ALL && $answer != Strings::SHORT_CANCEL){
+							//Faz pergunta para o usuario de como proceder
+							$answer = $command->ask(Strings::replaceMigrationFiles($arquivos[$i]), false);
+						}
+						//Se a resposta for sim, ou all
+						if (strtolower($answer) == Strings::SHORT_YES || strtolower($answer) == Strings::SHORT_ALL || $copyAll == true){
+							//se a resposta for all
+							if (strtolower($answer) == Strings::SHORT_ALL){
+								//seta variavel all para true
+								$copyAll = true;
+							}
+
+							//Captura o numero da migration
+							$migrationCounter = Configs::getConfig(PathHelper::getModuleGeneralConfig(), Strings::CONFIG_MIGRATIONS_COUNTER);
+							//Atualiza o contador de migrations
+							Configs::setConfig(PathHelper::getModuleGeneralConfig(), Strings::CONFIG_MIGRATIONS_COUNTER, $migrationCounter+1);
+
+							//Sinaliza o no arquivo copiado
+							$rollback[Strings::ROLLBACK_MODULE_MIGRATION_FILE_TAG][] = EscapeHelper::encode(
+								PathHelper::getModuleMigrationsPath($moduleType, $moduleName).Strings::timestampPadding($migrationCounter).Strings::MIGRATIONS_WORD_SEPARATOR.$SimplifiedModuleMigrationName
+							);
+
+							//Faz backup do arquivo que será substituido
+							$rollback[Strings::ROLLBACK_MODULE_MIGRATION_DELETED_FILE_TAG][EscapeHelper::encode(PathHelper::getLaravelMigrationsPath().$migrationFiles[$migrationPos])] = EscapeHelper::encode(
+								file_get_contents(PathHelper::getLaravelMigrationsPath().$migrationFiles[$migrationPos])
+							);
+
+							//Deletar o arquivo antigo
+							if (unlink(PathHelper::getLaravelMigrationsPath().$migrationFiles[$migrationPos]) == false){
+								$errors[] = Strings::migrationsFileDeleteError($arquivos[$i]);
+							}
+
+							//verifica se a substituição ocorreu com sucesso
+							if (copy(
+									PathHelper::getModuleMigrationsPath($moduleType, $moduleName).$arquivos[$i],
+									Strings::timestampPadding($migrationCounter).Strings::MIGRATIONS_WORD_SEPARATOR.$SimplifiedModuleMigrationName) == false){
+								$errors[] = Strings::migrationsFileCopyError($arquivos[$i]);
+							}
+						}else if (strtolower($answer) == Strings::SHORT_CANCEL){//se a resposta foi cancelar
+							//Printa msg de erro
+							$errors[] = (Strings::userRequestedAbort());
+							//break the file loop
+							break;
 						}
 
-						//Captura o numero da migration
-						$migrationCounter = Configs::getConfig(PathHelper::getModuleGeneralConfig(), Strings::CONFIG_MIGRATIONS_COUNTER);
-						//Atualiza o contador de migrations
-						Configs::setConfig(PathHelper::getModuleGeneralConfig(), Strings::CONFIG_MIGRATIONS_COUNTER, $migrationCounter+1);
-
-						//Sinaliza o no arquivo copiado
-						$rollback[Strings::ROLLBACK_MODULE_MIGRATION_FILE_TAG][] = EscapeHelper::encode(
-							PathHelper::getModuleMigrationsPath($moduleType, $moduleName).Strings::timestampPadding($migrationCounter).Strings::MIGRATIONS_WORD_SEPARATOR.$SimplifiedModuleMigrationName
-						);
-
-						//Faz backup do arquivo que será substituido
-						$rollback[Strings::ROLLBACK_MODULE_MIGRATION_DELETED_FILE_TAG][EscapeHelper::encode(PathHelper::getLaravelMigrationsPath().$migrationFiles[$migrationPos])] = EscapeHelper::encode(
-							file_get_contents(PathHelper::getLaravelMigrationsPath().$migrationFiles[$migrationPos])
-						);
-
-						//Deletar o arquivo antigo
-						if (unlink(PathHelper::getLaravelMigrationsPath().$migrationFiles[$migrationPos]) == false){
-							$errors[] = Strings::migrationsFileDeleteError($arquivos[$i]);
-						}
-
-						//verifica se a substituição ocorreu com sucesso
-						if (copy(
-								PathHelper::getModuleMigrationsPath($moduleType, $moduleName).$arquivos[$i],
-								Strings::timestampPadding($migrationCounter).Strings::MIGRATIONS_WORD_SEPARATOR.$SimplifiedModuleMigrationName) == false){
-							$errors[] = Strings::migrationsFileCopyError($arquivos[$i]);
-						}
-					}else if (strtolower($answer) == Strings::SHORT_CANCEL){//se a resposta foi cancelar
-						//Printa msg de erro
-						$errors[] = (Strings::userRequestedAbort());
-						//break the file loop
-						break;
 					}
 				}
 			}

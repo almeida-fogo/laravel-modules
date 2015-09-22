@@ -113,6 +113,7 @@ class Strings {
 	const ERROR_CANT_RESOLVE_LOADED_MODULES = "ERRO: Nao Foi Possivel Ler os Modulos Carregados";
 	const ERROR_CANT_RESOLVE_MODULE_NAME = "ERRO: Erro ao Obter Nome do Ultimo Modulo Carregado";
 	const ERROR_INEXISTENT_MODULE = "ERRO: O Modulo que Voce Esta Tentando Carregar nao Existe";
+	const ERROR_MODULE_NOT_LOADED = "ERRO: O Modulo que Voce Esta Tentando Executar Refresh nao Existe";
 
 	//ROUTEBUILDER
 	const ROUTER_BUILDER_GEN_FILE_STRING_HEADER = "//This is a RoutesBuilder generated routes file";
@@ -336,10 +337,22 @@ class Strings {
      * @param string $moduleName
      * @return string
      */
-    public static function successfulyRunModuleLoad($moduleType, $moduleName){
+    public static function successfullyRunModuleLoad($moduleType, $moduleName){
         return 'Comando executado com sucesso. '.$moduleType.'.'.$moduleName.' '.
         Configs::getConfig(PathHelper::getModuleConfigPath($moduleType, $moduleName), "versao");
     }
+
+	/**
+	 * Retorna a mensagem de sucesso ao rodar comando module:refresh
+	 *
+	 * @param string $moduleType
+	 * @param string $moduleName
+	 * @return string
+	 */
+	public static function successfullyRunModuleRefresh($moduleType, $moduleName){
+		return 'Comando executado com sucesso. '.$moduleType.'.'.$moduleName.' '.
+		Configs::getConfig(PathHelper::getModuleConfigPath($moduleType, $moduleName), "versao");
+	}
 
 	/**
 	 * Retorna uma mensagem de informação dizendo o nome do modulo a ser efetuado o rollback
@@ -362,4 +375,16 @@ class Strings {
 	public static function checkModuleExistence($moduleType, $moduleName){
 		return 'INFO: Verificando a Existencia do modulo "'.$moduleType.'.'.$moduleName.'"';
 	}
+
+	/**
+	 * Retorna uma mensagem de informação dizendo que esta checando se o modulo esta carregado
+	 *
+	 * @param string $moduleType
+	 * @param string $moduleName
+	 * @return string
+	 */
+	public static function checkIfModuleLoaded($moduleType, $moduleName){
+		return 'INFO: Verificando se o modulo "'.$moduleType.'.'.$moduleName.'" esta carregado';
+	}
+
 }

@@ -95,7 +95,7 @@ class LoadModule extends Command
         LoadModule::$errors = ModulesHelper::createMigrationsCheckTable();
 
 		/////////////////////////////////CHECA PELA EXISTENCIA DO MODULO////////////////////////////////////////////////
-		ModulesHelper::executeHelperMethod(empty(LoadModule::$errors), function()use($moduleType, $moduleName, $explodedLoadedModules, $explodedLoadedTypes){
+		ModulesHelper::executeHelperMethod(empty(LoadModule::$errors), function()use($moduleType, $moduleName){
 			return ModulesHelper::checkModuleExistence(
 				$moduleType,
 				$moduleName
@@ -209,7 +209,7 @@ class LoadModule extends Command
 		////////////////////////////////////////////////RESPONSE (OUTPUT)///////////////////////////////////////////////
 		if (empty(LoadModule::$errors)){//Se os comandos rodarem com sucesso
 			//Comentario comando executado com sucesso
-			$this->comment(Strings::successfulyRunModuleLoad($moduleType, $moduleName));
+			$this->comment(Strings::successfullyRunModuleLoad($moduleType, $moduleName));
 			return true;
 		}else{//Se ocorrer erro ao rodar os comandos
             foreach (LoadModule::$errors as $error) {

@@ -45,9 +45,9 @@ class ModulesServiceProvider extends ServiceProvider
 		});
 		$this->commands('command.almeida-fogo.listmodules');
 
-		$this->app->singleton('command.almeida-fogo.refreshmodules', function ($app) {
-			return $app['AlmeidaFogo\LaravelModules\Commands\RefreshModules'];
+		$this->app->singleton('command.almeida-fogo.refreshmodule', function ($app) {
+			return $app['AlmeidaFogo\LaravelModules\Commands\RefreshModule'];
 		});
-		$this->commands('command.almeida-fogo.refreshmodules');
+		$this->commands('command.almeida-fogo.refreshmodule');
     }
 }
