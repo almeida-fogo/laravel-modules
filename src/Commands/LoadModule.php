@@ -215,7 +215,7 @@ class LoadModule extends Command
             foreach (LoadModule::$errors as $error) {
                 $this->error($error);
             }
-			RollbackManager::execRollback($rollback, $this);
+			RollbackManager::execSoftRollback($rollback, $this);
 			return false;
 		}
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////

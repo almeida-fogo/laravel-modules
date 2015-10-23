@@ -353,14 +353,23 @@ class RollbackManager {
 		$errors = [ ];
 
 		if (array_key_exists(Strings::ROLLBACK_OLD_ROLLBACK_TAG, $rollback)) {
-			if (array_key_exists(Strings::ROLLBACK_LOADED_MODULE_TAG, $rollback)) {
-				$explodedModulePathNTitle = explode(Strings::MODULE_TYPE_NAME_SEPARATOR, $rollback[Strings::ROLLBACK_LOADED_MODULE_TAG]);
+			if (array_key_exists(Strings::ROLLBACK_LOADED_MODULE_TAG, $rollback) == false && array_key_exists(Strings::ROLLBACK_REFRESH_MODULE_NAME, $rollback) == false) {
+				$errors[] = Strings::ERROR_GET_MODULE_NAME;
+			}else{
+				if (array_key_exists(Strings::ROLLBACK_LOADED_MODULE_TAG, $rollback)){
+					$explodedModulePathNTitle = explode(Strings::MODULE_TYPE_NAME_SEPARATOR, $rollback[Strings::ROLLBACK_LOADED_MODULE_TAG]);
+					var_dump("normal rollback");
+				}else{
+					$explodedModulePathNTitle = explode(Strings::MODULE_TYPE_NAME_SEPARATOR, $rollback[Strings::ROLLBACK_REFRESH_MODULE_NAME]);
+					var_dump("soft rollback");
+				}
+				var_dump($explodedModulePathNTitle);
 				if (is_array($explodedModulePathNTitle) && count($explodedModulePathNTitle) >= 2){
 					$oldRollback = EscapeHelper::decode($rollback[Strings::ROLLBACK_OLD_ROLLBACK_TAG]);
 					if (file_put_contents(PathHelper::getModuleRollbackFile($explodedModulePathNTitle[0], $explodedModulePathNTitle[1]),
-										  str_replace(file_get_contents(PathHelper::getModuleRollbackFile($explodedModulePathNTitle[0], $explodedModulePathNTitle[1])),
-													  $oldRollback,
-													  file_get_contents(PathHelper::getModuleRollbackFile($explodedModulePathNTitle[0], $explodedModulePathNTitle[1]))))
+							str_replace(file_get_contents(PathHelper::getModuleRollbackFile($explodedModulePathNTitle[0], $explodedModulePathNTitle[1])),
+								$oldRollback,
+								file_get_contents(PathHelper::getModuleRollbackFile($explodedModulePathNTitle[0], $explodedModulePathNTitle[1]))))
 						== false
 					) {
 						$errors[] = Strings::ERROR_WRITE_ROLLBACK_FILE;
@@ -368,8 +377,6 @@ class RollbackManager {
 				}else{
 					$errors[] = Strings::ERROR_INVALID_MODULE_NAME;
 				}
-			}else{
-				$errors[] = Strings::ERROR_GET_MODULE_NAME;
 			}
 		}
 
@@ -458,13 +465,44 @@ class RollbackManager {
 	}
 
 	/**
-	 * Executa o rollback
+	 * Faz rollback do arquivo de rollback do modulo
+	 *
+	 * @param array $rollback
+	 * @return array|bool
+	 */
+	public static function execHardRollback($moduleType, $moduleName, Command $command)
+	{
+		$rollback = PathHelper::getModuleRollbackFile($moduleType,$moduleName);
+
+		RollbackManager::transformRollbackFileToRollbackArrayIfNeeded($rollback);
+
+		while(!empty($rollback)){
+			$errors = [ ];
+
+			$rollback = PathHelper::getModuleRollbackFile($moduleType,$moduleName);
+
+			RollbackManager::transformRollbackFileToRollbackArrayIfNeeded($rollback);
+
+			if(!RollbackManager::execSoftRollback($rollback, $command)){
+				$errors[] = Strings::ERROR_EXEC_HARD_ROLLBACK;
+				break;
+			}
+
+			RollbackManager::transformRollbackFileToRollbackArrayIfNeeded($rollback);
+		}
+
+		return !empty($errors) ? $errors : true;
+	}
+
+
+	/**
+	 * Executa o soft rollback
 	 *
 	 * @param mixed $rollback
 	 * @param Command $command
 	 * @return bool
 	 */
-	public static function execRollback($rollback, Command $command)
+	public static function execSoftRollback($rollback, Command $command)
 	{
 		RollbackManager::$errors = [ ];
 
@@ -537,7 +575,7 @@ class RollbackManager {
 		);
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-		///////////////////////////////////////////ROLLBACK DOS ARQUIVOS DE MIGRATION///////////////////////////////////
+		///////////////////////////////////////////ROLLBACK DO CONTADOR DE MIGRATION////////////////////////////////////
 		RollbackManager::executeRollbackMethod(empty(RollbackManager::$errors) && is_array($rollback) && !empty($rollback), function() use ($rollback, &$counterMigrationFilesDeleted){
 			return RollbackManager::runMigrationCounterRollback
 			(

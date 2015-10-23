@@ -22,7 +22,7 @@ class RollbackModule extends Command
      *
      * @var string
      */
-    protected $signature = 'module:rollback';
+    protected $signature = 'module:rollback  {--soft}';
 
     /**
      * The console command description.
@@ -48,6 +48,8 @@ class RollbackModule extends Command
      */
     public function handle()
     {
+		$softRollback = $this->option('soft');
+
 		//Modulos ja carregados
 		$oldLoadedModules = Configs::getConfig(PathHelper::getModuleGeneralConfig(), Strings::CONFIG_LOADED_MODULES);
 
@@ -68,7 +70,11 @@ class RollbackModule extends Command
 
 					$lastModuleRollbackFile = PathHelper::getModuleRollbackFile($lastModuleType, $lastModuleName);
 
-					RollbackManager::execRollback($lastModuleRollbackFile, $this);
+					if ($softRollback){
+						RollbackManager::execSoftRollback($lastModuleRollbackFile, $this);
+					}else{
+						RollbackManager::execHardRollback($lastModuleType, $lastModuleName, $this);
+					}
 				}else{
 					$this->error(Strings::ERROR_CANT_RESOLVE_MODULE_NAME);
 				}

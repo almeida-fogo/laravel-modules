@@ -188,8 +188,7 @@ class ModulesHelper {
 	 */
 	public static function checkIfModuleLoaded($moduleType, $moduleName, array $explodedLoadedModules){
 		$errors = [];
-
-		if(array_search($moduleType.$moduleName, $explodedLoadedModules) == false){
+		if(array_search($moduleType.Strings::MODULE_TYPE_NAME_SEPARATOR.$moduleName, $explodedLoadedModules) === false){
 			$errors[] = Strings::ERROR_MODULE_NOT_LOADED;
 		}
 
@@ -552,6 +551,7 @@ class ModulesHelper {
 
 		return !empty($errors) ? $errors : true;
 	}
+
 	/**
 	 * Constroi o arquivo de rollback
 	 *
@@ -580,4 +580,19 @@ class ModulesHelper {
 		return !empty($errors) ? $errors : true;
 	}
 
+	/**
+	 * Adiciona o nome do modulo ao array de rollback do tipo refresh
+	 *
+	 * @param string $moduleType
+	 * @param string $moduleName
+	 * @param array $rollback
+	 * @return array|bool
+	 */
+	public static function setRollbackFileAsRefreshType($moduleType, $moduleName, array &$rollback)
+	{
+		//coloca nome do modulo no array de rollback
+		$rollback[Strings::ROLLBACK_REFRESH_MODULE_NAME] = $moduleType.Strings::MODULE_TYPE_NAME_SEPARATOR.$moduleName;
+
+		return true;
+	}
 }

@@ -39,6 +39,7 @@ class Strings {
 
 	//ROLLBACK
 	const ROLLBACK_LOADED_MODULE_TAG = "LoadedModule";
+	const ROLLBACK_REFRESH_MODULE_NAME = "refresh-rollback-module";
 	const ROLLBACK_MODULE_CONFIGS_TAG = "module-configs";
 	const ROLLBACK_ORDINARY_FILE_COPY_TAG = "module-files";
 	const ROLLBACK_DIR_CREATED_TAG = "dir-created";
@@ -92,7 +93,7 @@ class Strings {
     const ERROR_MIGRATIONS_CONTROLL_DB_DOESNT_EXISTS = "ERRO: Arquivo de Controle de Migrations nao Existe";
     const ERROR_DATABASE_CONECTION = "ERRO: Erro de conexao com o banco de dados";
     const ERROR_MIGRATE_ROLLBACK = "ERRO: Erro ao Rodar Rollback das Migrations";
-    const ERROR_GET_MODULE_NAME_FROM_DB = "ERRO: Erro ao Capturar Nome do Modulo";
+    const ERROR_GET_MODULE_NAME_FROM_DB = "ERRO: Erro ao Capturar Nome do Modulo From DB";
     const ERROR_WRITE_ROUTEBUILDER_FILE = "ERRO: Erro ao Escrever Arquivo de RouteBuilder";
 	const ERROR_WRITE_ROUTES_FILE = "ERRO: Erro ao Escrever Arquivo de Rotas";
 	const ERROR_REMOVING_MIGRATION_FILES = "ERRO: Problemas ao Deletar Arquivos de Migration";
@@ -114,6 +115,7 @@ class Strings {
 	const ERROR_CANT_RESOLVE_MODULE_NAME = "ERRO: Erro ao Obter Nome do Ultimo Modulo Carregado";
 	const ERROR_INEXISTENT_MODULE = "ERRO: O Modulo que Voce Esta Tentando Carregar nao Existe";
 	const ERROR_MODULE_NOT_LOADED = "ERRO: O Modulo que Voce Esta Tentando Executar Refresh nao Existe";
+	const ERROR_EXEC_HARD_ROLLBACK = "ERRO: Erro ao executar o hard rollback";
 
 	//ROUTEBUILDER
 	const ROUTER_BUILDER_GEN_FILE_STRING_HEADER = "//This is a RoutesBuilder generated routes file";

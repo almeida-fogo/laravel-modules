@@ -83,8 +83,15 @@ class RefreshModule extends Command
 		//Pega modulos carredos em forma de array
 		$explodedLoadedModules = ModulesHelper::getLoadedModules($oldLoadedModules);
 
-		//Separa os tipos dos modulos carregados em um array
-		$explodedLoadedTypes = ModulesHelper::explodeTypes( $explodedLoadedModules );
+		/////////////////////////////////DEFINE TIPO DO ROLLBACK COMO REFRESH///////////////////////////////////////////
+		ModulesHelper::executeHelperMethod(empty(RefreshModule::$errors), function()use($moduleType, $moduleName, &$rollback){
+			return ModulesHelper::setRollbackFileAsRefreshType(
+				$moduleType,
+				$moduleName,
+				$rollback
+			);}
+		);
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		/////////////////////////////////CHECA PELA EXISTENCIA DO MODULO////////////////////////////////////////////////
 		ModulesHelper::executeHelperMethod(empty(RefreshModule::$errors), function()use($moduleType, $moduleName){
@@ -142,17 +149,6 @@ class RefreshModule extends Command
 		);
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-		////////////////////////////////////////////////RUN MODULE MIGRATIONS///////////////////////////////////////////
-		ModulesHelper::executeHelperMethod(empty(RefreshModule::$errors), function()use($moduleType, $moduleName, &$rollback, $that){
-			return ModulesHelper::runMigrations
-			(
-				$moduleType, $moduleName, $rollback, $that
-			);},
-			function($result){if ($result !== true){RefreshModule::$errors = array_merge( RefreshModule::$errors , $result );}},
-			$this, Strings::STATUS_RUNING_MIGRATIONS
-		);
-		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 		////////////////////////////////////////////////GENERATE ROLLBACK FILE//////////////////////////////////////////
 		ModulesHelper::executeHelperMethod(empty(RefreshModule::$errors), function()use($moduleType, $moduleName, &$rollback){
 			return ModulesHelper::createRollbackFile
@@ -173,7 +169,7 @@ class RefreshModule extends Command
 			foreach (RefreshModule::$errors as $error) {
 				$this->error($error);
 			}
-			RollbackManager::execRollback($rollback, $this);
+			RollbackManager::execSoftRollback($rollback, $this);
 			return false;
 		}
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////
